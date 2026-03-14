@@ -1,0 +1,96 @@
+Windows Registry Editor Version 5.00
+
+;注册mplayer2的有效格式
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio\AIFF]
+@="AIFF 音频文件(aiff)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10004"
+"Description"="包括扩展名为 .aif、
+.aifc 和 .aiff 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10022"
+"Extensions"=".aif .aifc .aiff"
+"MIME Types"="audio/x-aiff audio/aiff"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio\AU]
+@="AU 音频文件(au)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-9992"
+"Description"="包括扩展名为 .au 和 .snd 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10010"
+"Extensions"=".au .snd"
+"MIME Types"="audio/basic"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio\MIDI]
+@="MIDI 文件(midi)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-9993"
+"Description"="包括扩展名为 .mid、
+.midi 和 .rmi 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10011"
+"Extensions"=".mid .midi .rmi"
+"MIME Types"="audio/mid audio/midi audio/x-mid audio/x-midi midi/mid"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio\MP3]
+@="MP3 音频文件(mp3)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10002"
+"Description"="包括扩展名为 .mp3 和 .m3u 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10020"
+"Extensions"=".mp3 .m3u"
+"MIME Types"="audio/mpeg audio/mpg audio/mp3 audio/x-mpeg audio/x-mpg audio/x-mp3 audio/mpegurl audio/x-mpegurl"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio\WAV]
+@="Windows 音频文件(wav)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-9995"
+"Description"="包括扩展名为 .wav 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10013"
+"Extensions"=".wav"
+"MIME Types"="audio/wav audio/x-wav"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Audio\WMA]
+@="Windows Media 音频文件(wma)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-9994"
+"Description"="包括扩展名为 .wma 和 .wax 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10012"
+"Extensions"=".wma .wax"
+"MIME Types"="audio/x-ms-wma audio/x-ms-wax"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Video]
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Video\ASF]
+@="Windows Media 文件(asf)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-9996"
+"Description"="包括扩展名为 .asf、
+.asx、.dvr-ms、
+.wpl、.wm、.wmx、
+.wmd 和 .wmz 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10023"
+"Extensions"=".asf .asx .dvr-ms .wpl .wm .wmx .wmd .wmz"
+"MIME Types"="application/x-mplayer2 video/x-ms-asf video/x-ms-asf-plugin video/x-ms-wm video/x-ms-wmx"
+"Protocols"="mms mmst mmsu msbd"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Video\AVI]
+@="Windows 视频文件(avi)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-9997"
+"Description"="包括扩展名为 .avi 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10015"
+"Extensions"=".avi"
+"MIME Types"="video/avi video/msvideo video/x-msvideo"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Video\MPEG]
+@="电影文件(mpeg)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10003"
+"Description"="包括扩展名为 .mpeg、
+.mpg、.mpe、.mv1、
+.mp2、.mpv2、.mp2v 和 .mpa 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10021"
+"Extensions"=".mpeg .mpg .mpe .m1v .mp2 .mpv2 .mp2v .mpa"
+"MIME Types"="video/mpeg video/x-mpeg video/x-mpeg2a video/mpg"
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Multimedia\MPlayer2\Groups\Video\WMV]
+@="Windows Media 视频文件(wmv)"
+"FriendlyTypeName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10000"
+"Description"="包括扩展名为 .wmv 和 .wvx 的文件。"
+"DescriptionFriendlyName"="@C:\\WINDOWS\\inf\\unregmp2.exe,-10018"
+"Extensions"=".wmv .wvx"
+"MIME Types"="video/x-ms-wmv video/x-ms-wvx"
