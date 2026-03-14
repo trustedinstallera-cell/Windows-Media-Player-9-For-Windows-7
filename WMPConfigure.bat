@@ -156,48 +156,49 @@ if not exist "1" (
 		echo 否则，请先获取当前系统的 SID，然后执行以下操作之一：
 		echo - 编辑附带的 SkippingSetup_wm.reg 文件，将其中的示例 SID（S-1-5-21-1061874622-3929897800-1008325475-1000）替换为您的实际 SID，保存并导入注册表。
 		echo - 或者，使用系统还原点将计算机还原到之前状态，然后运行 "C:\Program Files (x86)\Windows Media Player\setup_wm.exe"，并完全重新开始此安装程序。
-		set /p %SID%="请通过你可以使用的方法获取 SID，并使用附带的SkippingSetup_wm.reg，将 S-1-5-21-1061874622-3929897800-1008325475-1000 替换为您的 SID，保存并导入该注册表项；或使用系统还原点还原计算机，运行C:\Program Files (x86)\Windows Media Player\setum_wm.exe，然后从头运行该程序；如果您之前运行过 Windows Media Player，那么可以忽略此错误。"
+		set /p SID="请通过你可以使用的方法获取 SID 并输入值，并使用附带的SkippingSetup_wm.reg，将 S-1-5-21-1061874622-3929897800-1008325475-1000 替换为您的 SID，保存并导入该注册表项；或使用系统还原点还原计算机，运行C:\Program Files (x86)\Windows Media Player\setum_wm.exe，然后从头运行该程序；如果您之前运行过 Windows Media Player，那么可以忽略此错误。"
 		pause
 	)
 		
 	:: 目标注册表路径
-	set "KEY=HKU\%SID%\Software\Microsoft\MediaPlayer\Preferences"
+	set "KEY=HKU\!SID!\Software\Microsoft\MediaPlayer\Preferences"
+	
 	
 	:: 写入所有必需的注册表键值（强制覆盖）
-	reg add "%KEY%" /v "AcceptedPrivacyStatement"          /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "AppColorLimited"                   /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "DefaultSubscriptionService"        /t REG_SZ    /d "Bing" /f
-	reg add "%KEY%" /v "DisableMRUMusic"                   /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "DisableMRUPictures"                /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "DisableMRUPlaylists"               /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "DisableMRUVideo"                    /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "EverLoadedServices"                /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "LastContainerMode"                 /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "LastContainerV12"                  /t REG_SZ    /d "{70C02500-7C6F-11D3-9FB6-00105AA620BB}" /f
-	reg add "%KEY%" /v "LaunchIndex"                        /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "LibraryBackgroundImage"             /t REG_DWORD /d 6 /f
-	reg add "%KEY%" /v "LibraryForceShowColumns"           /t REG_DWORD /d 0 /f
-	reg add "%KEY%" /v "LibraryHasBeenPopulated"           /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "LibraryHMENodesVisible"            /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "MetadataRetrieval"                 /t REG_DWORD /d 3 /f
-	reg add "%KEY%" /v "MigratedXML"                        /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "Migrating"                          /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "AcceptedPrivacyStatement"          /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "AppColorLimited"                   /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "DefaultSubscriptionService"        /t REG_SZ    /d "Bing" /f
+	reg add "!KEY!" /v "DisableMRUMusic"                   /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "DisableMRUPictures"                /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "DisableMRUPlaylists"               /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "DisableMRUVideo"                    /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "EverLoadedServices"                /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "LastContainerMode"                 /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "LastContainerV12"                  /t REG_SZ    /d "{70C02500-7C6F-11D3-9FB6-00105AA620BB}" /f
+	reg add "!KEY!" /v "LaunchIndex"                        /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "LibraryBackgroundImage"             /t REG_DWORD /d 6 /f
+	reg add "!KEY!" /v "LibraryForceShowColumns"           /t REG_DWORD /d 0 /f
+	reg add "!KEY!" /v "LibraryHasBeenPopulated"           /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "LibraryHMENodesVisible"            /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "MetadataRetrieval"                 /t REG_DWORD /d 3 /f
+	reg add "!KEY!" /v "MigratedXML"                        /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "Migrating"                          /t REG_DWORD /d 0 /f
 	rem 0x54 = 84
-	reg add "%KEY%" /v "MLSChangeIndexList"                /t REG_DWORD /d 84 /f
-	reg add "%KEY%" /v "MLSChangeIndexMusic"               /t REG_DWORD /d 3 /f
-	reg add "%KEY%" /v "MLSChangeIndexPhoto"               /t REG_DWORD /d 8 /f
-	reg add "%KEY%" /v "MLSChangeIndexVideo"               /t REG_DWORD /d 2 /f
-	reg add "%KEY%" /v "MostRecentFileAddOrRemove"         /t REG_BINARY /d 10cb19e521b2dc01 /f
-	reg add "%KEY%" /v "SendUserGUID"                       /t REG_BINARY /d 00 /f
-	reg add "%KEY%" /v "SetHMEPermissionsOnDBDone"         /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "SilentAcquisition"                 /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "SQMLaunchIndex"                     /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "TranscodedFilesCacheDefaultSizeSet" /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "MLSChangeIndexList"                /t REG_DWORD /d 84 /f
+	reg add "!KEY!" /v "MLSChangeIndexMusic"               /t REG_DWORD /d 3 /f
+	reg add "!KEY!" /v "MLSChangeIndexPhoto"               /t REG_DWORD /d 8 /f
+	reg add "!KEY!" /v "MLSChangeIndexVideo"               /t REG_DWORD /d 2 /f
+	reg add "!KEY!" /v "MostRecentFileAddOrRemove"         /t REG_BINARY /d 10cb19e521b2dc01 /f
+	reg add "!KEY!" /v "SendUserGUID"                       /t REG_BINARY /d 00 /f
+	reg add "!KEY!" /v "SetHMEPermissionsOnDBDone"         /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "SilentAcquisition"                 /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "SQMLaunchIndex"                     /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "TranscodedFilesCacheDefaultSizeSet" /t REG_DWORD /d 1 /f
 	rem 0x17ff = 6143
-	reg add "%KEY%" /v "TranscodedFilesCacheSize"           /t REG_DWORD /d 6143 /f
-	reg add "%KEY%" /v "TreeQueryWatcher"                   /t REG_DWORD /d 2 /f
-	reg add "%KEY%" /v "UsageLoggerRanOnce"                 /t REG_DWORD /d 1 /f
-	reg add "%KEY%" /v "UsageTracking"                      /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "TranscodedFilesCacheSize"           /t REG_DWORD /d 6143 /f
+	reg add "!KEY!" /v "TreeQueryWatcher"                   /t REG_DWORD /d 2 /f
+	reg add "!KEY!" /v "UsageLoggerRanOnce"                 /t REG_DWORD /d 1 /f
+	reg add "!KEY!" /v "UsageTracking"                      /t REG_DWORD /d 1 /f
 	
 	echo 注册表项已添加完成，Windows Media Player 将跳过首次运行配置。
 	
@@ -224,62 +225,62 @@ if not exist "1" (
         rem 在这里添加打开方式注册代码
 		rem 分开音视频逻辑
 		:: 定义基础路径
-		set "BASE=HKU\%SID%\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts"
+		set "BASE=HKU\!SID!\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts"
 
 		echo 正在配置音频文件关联...
-		call :SetAssociation .aac   WMP11.AssocFile.ADTS BASE
-		call :SetAssociation .adt   WMP11.AssocFile.ADTS BASE
-		call :SetAssociation .adts  WMP11.AssocFile.ADTS BASE
-		call :SetAssociation .aif   WMP11.AssocFile.AIFF BASE
-		call :SetAssociation .aifc  WMP11.AssocFile.AIFF BASE
-		call :SetAssociation .aiff  WMP11.AssocFile.AIFF BASE
-		call :SetAssociation .au    WMP11.AssocFile.AU BASE
-		call :SetAssociation .cda   WMP11.AssocFile.CDA BASE
-		call :SetAssociation .m3u   WMP11.AssocFile.m3u BASE
-		call :SetAssociation .m4a   WMP11.AssocFile.M4A BASE
-		call :SetAssociation .mid   WMP11.AssocFile.MIDI BASE
-		call :SetAssociation .midi  WMP11.AssocFile.MIDI BASE
-		call :SetAssociation .mp2   WMP11.AssocFile.MP3 BASE
-		call :SetAssociation .mp3   WMP11.AssocFile.MP3 BASE
-		call :SetAssociation .rmi   WMP11.AssocFile.MIDI BASE
-		call :SetAssociation .snd   WMP11.AssocFile.AU BASE
-		call :SetAssociation .wav   WMP11.AssocFile.WAV BASE
-		call :SetAssociation .wax   WMP11.AssocFile.WAX BASE
-		call :SetAssociation .wma   WMP11.AssocFile.WMA BASE
-		call :SetAssociation .wpl   WMP11.AssocFile.WPL BASE
-		call :SetAssociation .wvx   WMP11.AssocFile.WVX BASE
+		call :SetAssociation .aac   WMP11.AssocFile.ADTS !BASE!
+		call :SetAssociation .adt   WMP11.AssocFile.ADTS !BASE!
+		call :SetAssociation .adts  WMP11.AssocFile.ADTS !BASE!
+		call :SetAssociation .aif   WMP11.AssocFile.AIFF !BASE!
+		call :SetAssociation .aifc  WMP11.AssocFile.AIFF !BASE!
+		call :SetAssociation .aiff  WMP11.AssocFile.AIFF !BASE!
+		call :SetAssociation .au    WMP11.AssocFile.AU !BASE!
+		call :SetAssociation .cda   WMP11.AssocFile.CDA !BASE!
+		call :SetAssociation .m3u   WMP11.AssocFile.m3u !BASE!
+		call :SetAssociation .m4a   WMP11.AssocFile.M4A !BASE!
+		call :SetAssociation .mid   WMP11.AssocFile.MIDI !BASE!
+		call :SetAssociation .midi  WMP11.AssocFile.MIDI !BASE!
+		call :SetAssociation .mp2   WMP11.AssocFile.MP3 !BASE!
+		call :SetAssociation .mp3   WMP11.AssocFile.MP3 !BASE!
+		call :SetAssociation .rmi   WMP11.AssocFile.MIDI !BASE!
+		call :SetAssociation .snd   WMP11.AssocFile.AU !BASE!
+		call :SetAssociation .wav   WMP11.AssocFile.WAV !BASE!
+		call :SetAssociation .wax   WMP11.AssocFile.WAX !BASE!
+		call :SetAssociation .wma   WMP11.AssocFile.WMA !BASE!
+		call :SetAssociation .wpl   WMP11.AssocFile.WPL !BASE!
+		call :SetAssociation .wvx   WMP11.AssocFile.WVX !BASE!
 		
 		:: ==================== 视频文件关联 ====================
 		echo 正在配置视频文件关联...
-		call :SetAssociation .3g2   WMP11.AssocFile.3G2 BASE
-		call :SetAssociation .3gp   WMP11.AssocFile.3GP BASE
-		call :SetAssociation .asf   WMP11.AssocFile.ASF BASE
-		call :SetAssociation .asx   WMP11.AssocFile.ASX BASE
-		call :SetAssociation .avi   WMP11.AssocFile.AVI BASE
-		call :SetAssociation .m1v   WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .m2t   WMP11.AssocFile.M2TS BASE
-		call :SetAssociation .m2ts  WMP11.AssocFile.M2TS BASE
-		call :SetAssociation .m2v   WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .m4v   WMP11.AssocFile.MP4 BASE
-		call :SetAssociation .mod   WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mov   WMP11.AssocFile.MOV BASE
-		call :SetAssociation .mp2v  WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mp4   WMP11.AssocFile.MP4 BASE
-		call :SetAssociation .mp4v  WMP11.AssocFile.MP4 BASE
-		call :SetAssociation .mpa   WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mpe   WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mpeg  WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mpg   WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mpv2  WMP11.AssocFile.MPEG BASE
-		call :SetAssociation .mts   WMP11.AssocFile.M2TS BASE
-		call :SetAssociation .ts    WMP11.AssocFile.TTS BASE
-		call :SetAssociation .tts   WMP11.AssocFile.TTS BASE
-		call :SetAssociation .wm    WMP11.AssocFile.ASF BASE
-		call :SetAssociation .wmd   WMP11.AssocFile.WMD BASE
-		call :SetAssociation .wms   WMP11.AssocFile.WMS BASE
-		call :SetAssociation .wmv   WMP11.AssocFile.WMV BASE
-		call :SetAssociation .wmx   WMP11.AssocFile.ASX BASE
-		call :SetAssociation .wmz   WMP11.AssocFile.WMZ BASE
+		call :SetAssociation .3g2   WMP11.AssocFile.3G2 !BASE!
+		call :SetAssociation .3gp   WMP11.AssocFile.3GP !BASE!
+		call :SetAssociation .asf   WMP11.AssocFile.ASF !BASE!
+		call :SetAssociation .asx   WMP11.AssocFile.ASX !BASE!
+		call :SetAssociation .avi   WMP11.AssocFile.AVI !BASE!
+		call :SetAssociation .m1v   WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .m2t   WMP11.AssocFile.M2TS !BASE!
+		call :SetAssociation .m2ts  WMP11.AssocFile.M2TS !BASE!
+		call :SetAssociation .m2v   WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .m4v   WMP11.AssocFile.MP4 !BASE!
+		call :SetAssociation .mod   WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mov   WMP11.AssocFile.MOV !BASE!
+		call :SetAssociation .mp2v  WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mp4   WMP11.AssocFile.MP4 !BASE!
+		call :SetAssociation .mp4v  WMP11.AssocFile.MP4 !BASE!
+		call :SetAssociation .mpa   WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mpe   WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mpeg  WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mpg   WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mpv2  WMP11.AssocFile.MPEG !BASE!
+		call :SetAssociation .mts   WMP11.AssocFile.M2TS !BASE!
+		call :SetAssociation .ts    WMP11.AssocFile.TTS !BASE!
+		call :SetAssociation .tts   WMP11.AssocFile.TTS !BASE!
+		call :SetAssociation .wm    WMP11.AssocFile.ASF !BASE!
+		call :SetAssociation .wmd   WMP11.AssocFile.WMD !BASE!
+		call :SetAssociation .wms   WMP11.AssocFile.WMS !BASE!
+		call :SetAssociation .wmv   WMP11.AssocFile.WMV !BASE!
+		call :SetAssociation .wmx   WMP11.AssocFile.ASX !BASE!
+		call :SetAssociation .wmz   WMP11.AssocFile.WMZ !BASE!
 
 		
 		rem 对有 K-Lite Codec Pack的特判
