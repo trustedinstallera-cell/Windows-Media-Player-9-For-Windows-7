@@ -2,11 +2,51 @@
 cd /d "%~dp0"
 setlocal enabledelayedexpansion
 rem 进行调优工作，还是进行覆写安装？
+
+:menu
+echo [0] 退出程序
+echo [1] 执行部署过程
+echo [2] 检查依赖项目
+echo [3] 查看已知限制
+echo [4] 执行多用户部署
+
+choice /c 01234 /m "请选择一个选项"
+
+if errorlevel 5 goto MultiUsers
+if errorlevel 4 goto Limits
+if errorlevel 3 goto Check
+if errorlevel 2 goto Execute
+if errorlevel 1 exit
+
+:Limits
+echo Windows Media Center 必须被卸载，目前为止没有找到解决方法。
+::echo 
+pause
+goto menu
+
+:Check
+
 ver | find "6.1" > nul
 if errorlevel 1 (
     echo Warning: 不是被测试通过的版本
     echo Info: 若选择继续，将导致无法预料的情况
+) else (
+	echo 系统版本检测： Windows 7 [正确]
 )
+
+if not exist "%WinDir%\System32\regsvr32.exe" ( if not exist ".\regsvr32.exe" ( echo Fatal Error: 找不到 regsvr32.exe。无法注册 DLL 文件。请从其他计算机上复制文件到本脚本同级目录下，然后再展开部署。) ) else ( echo regsvr32.exe 存在 )
+if not exist "%WinDir%\System32\reg.exe" ( if not exist ".\reg.exe" ( echo Warning: 找不到 reg.exe，需要保证regedit.exe存在并手动导入.reg文件 ) ) else ( echo reg.exe 存在 )
+if not exist "wmp9xp" ( echo Error:找不到名为 wmp9xp 的文件夹，请重新下载程序 ) else ( echo wmp9xp 文件夹存在 )
+if not exist "wmp" ( echo Error:找不到名为 wmp 的文件夹，请重新下载程序 ) else ( echo wmp 文件夹存在 )
+::if not exist "%WinDir%\System32\wmic.exe" ( echo Error: 找不到 wmic。您需要手动在控制面板：打开或关闭 Windows 功能中卸载组件，在本脚本所在目录下创建名为1的文件夹，重新启动计算机，然后再次运行该程序。这样将跳过第一阶段的卸载过程。 ) else ( echo wmic 命令存在 )
+if not exist "%WinDir%\System32\xcopy.exe" ( if not exist ".\xcopy.exe" ( echo Warning: 找不到 xcopy.exe，无法复制文件 ) ) else ( echo xcopy.exe 存在 )
+if not exist ".\SetOpeningMethod.reg" echo Warning:找不到名为 SetOpeningMethod.reg 的文件夹，需要手动配置注册表项
+
+pause
+cls
+goto menu
+
+:Execute
 set /a Exception=0
 if not exist "wmp9xp" (
 	echo Error:找不到名为 wmp9xp 的文件夹，请重新下载程序
@@ -45,26 +85,6 @@ if "%Exception%" == "1" (
 
 pause
 if not exist "1" (
-	tasklist | find /i "wmplayer.exe" >nul
-	if %errorlevel% equ 0 (
-		echo 需要关闭 Windows Media Player ，正在关闭...
-		taskkill /f /im wmplayer.exe
-		if %errorlevel% equ 1 (
-			echo 错误：找不到名为 wmplayer.exe 的进程或权限不足。
-			echo 请确认程序没有运行后按任意键。
-			pause
-		)
-	)
-	tasklist | find /i "ehshell.exe" >nul
-	if %errorlevel% equ 0 (
-		echo 需要关闭 Windows Media Center ，正在关闭...
-		taskkill /f /im ehshell.exe
-		if %errorlevel% equ 1 (
-			echo 错误：找不到名为 ehshell.exe 的进程或权限不足。
-			echo 请确认程序没有运行后按任意键。
-			pause
-		)
-	)
 	rem 创建系统还原点...
 	echo 强烈建议您在运行前创建系统还原点或备份文件，因为该脚本会直接修改系统配置，可能影响系统稳定性
 	choice /c yn /m "创建系统还原点？"
@@ -76,7 +96,7 @@ if not exist "1" (
 		wmic /namespace:\\root\default path SystemRestore call Enable "C:"
 		if %errorlevel% equ 0 (
 			echo 成功启用系统还原。
-			wmic /namespace:\\root\default path SystemRestore call CreateRestorePoint "降级至 Windows Media Player 9", 0, 12
+			wmic.exe /Namespace:\\root\default Path SystemRestore Call CreateRestorePoint "降级至 Windows Media Player 9", 100, 7
 			::0：BEGIN_SYSTEM_CHANGE（开始系统更改）
 			::12：MODIFY_SETTINGS（应用程序安装/设置更改）
 			if %errorlevel% neq 0 (
@@ -106,7 +126,8 @@ if not exist "1" (
     start /w pkgmgr /uu:WindowsMediaPlayer /quiet /norestart
     echo > 1
     echo 第一阶段已完成。请尽快保存手头的工作，重新启动计算机，然后再次运行该程序。
-	rem 现在就重新启动计算机吗？
+	choice /c yn /m "现在就重新启动计算机吗？"
+	if errorlevel 1 shutdown -r -t 0
 	pause
 	exit
 ) else (
@@ -140,11 +161,12 @@ if not exist "1" (
     ::For mplayer2.exe
     echo 正在注册 msdxm.ocx...
     regsvr32 /s "C:\Program Files (x86)\Windows Media Player\msdxm.ocx"
-    
+   
+:MultiUsers		   
 	::Bypass setup_wm.exe using reg.exe
 	echo 正在跳过 setup_wm.exe 部署过程，因为它被程序兼容性助手所阻止...
 	
-		
+
 	if exist GetCurrentSID.exe (
 		:: 获取当前用户 SID
 		"GetCurrentSID.exe" > nul
@@ -159,7 +181,7 @@ if not exist "1" (
 		set /p SID="请通过你可以使用的方法获取 SID 并输入值，并使用附带的SkippingSetup_wm.reg，将 S-1-5-21-1061874622-3929897800-1008325475-1000 替换为您的 SID，保存并导入该注册表项；或使用系统还原点还原计算机，运行C:\Program Files (x86)\Windows Media Player\setum_wm.exe，然后从头运行该程序；如果您之前运行过 Windows Media Player，那么可以忽略此错误。"
 		pause
 	)
-		
+
 	:: 目标注册表路径
 	set "KEY=HKU\!SID!\Software\Microsoft\MediaPlayer\Preferences"
 	
@@ -202,6 +224,12 @@ if not exist "1" (
 	
 	echo 注册表项已添加完成，Windows Media Player 将跳过首次运行配置。
 	
+
+	:: 写入所有必需的注册表键值
+	reg import SetOpeningMethod.reg
+	
+	echo 注册表项已添加完成，Windows Media Player 将跳过首次运行配置。
+	
     choice /c yn /m "重新注册快捷方式？"
     if errorlevel 2 (
         echo 跳过快捷方式注册
@@ -211,9 +239,7 @@ if not exist "1" (
 		
 		::注意：Windows XP可以运行程序，但什么也不会发生
 		PinToTaskbar.exe > nul
-		if %errorlevel% equ 0 (
-			echo 错误：找不到 PinToTaskbar.exe 或 Windows Media Player.lnk。若要固定到任务栏，请尝试手动执行。
-		)
+
 		pause
     )
     
@@ -222,66 +248,8 @@ if not exist "1" (
         echo 跳过打开方式注册
     ) else (
         echo 正在注册打开方式...
-        rem 在这里添加打开方式注册代码
-		rem 分开音视频逻辑
-		:: 定义基础路径
-		set "BASE=HKU\!SID!\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts"
-
-		echo 正在配置音频文件关联...
-		call :SetAssociation .aac   WMP11.AssocFile.ADTS !BASE!
-		call :SetAssociation .adt   WMP11.AssocFile.ADTS !BASE!
-		call :SetAssociation .adts  WMP11.AssocFile.ADTS !BASE!
-		call :SetAssociation .aif   WMP11.AssocFile.AIFF !BASE!
-		call :SetAssociation .aifc  WMP11.AssocFile.AIFF !BASE!
-		call :SetAssociation .aiff  WMP11.AssocFile.AIFF !BASE!
-		call :SetAssociation .au    WMP11.AssocFile.AU !BASE!
-		call :SetAssociation .cda   WMP11.AssocFile.CDA !BASE!
-		call :SetAssociation .m3u   WMP11.AssocFile.m3u !BASE!
-		call :SetAssociation .m4a   WMP11.AssocFile.M4A !BASE!
-		call :SetAssociation .mid   WMP11.AssocFile.MIDI !BASE!
-		call :SetAssociation .midi  WMP11.AssocFile.MIDI !BASE!
-		call :SetAssociation .mp2   WMP11.AssocFile.MP3 !BASE!
-		call :SetAssociation .mp3   WMP11.AssocFile.MP3 !BASE!
-		call :SetAssociation .rmi   WMP11.AssocFile.MIDI !BASE!
-		call :SetAssociation .snd   WMP11.AssocFile.AU !BASE!
-		call :SetAssociation .wav   WMP11.AssocFile.WAV !BASE!
-		call :SetAssociation .wax   WMP11.AssocFile.WAX !BASE!
-		call :SetAssociation .wma   WMP11.AssocFile.WMA !BASE!
-		call :SetAssociation .wpl   WMP11.AssocFile.WPL !BASE!
-		call :SetAssociation .wvx   WMP11.AssocFile.WVX !BASE!
+        reg import SetOpeningMethod.reg
 		
-		:: ==================== 视频文件关联 ====================
-		echo 正在配置视频文件关联...
-		call :SetAssociation .3g2   WMP11.AssocFile.3G2 !BASE!
-		call :SetAssociation .3gp   WMP11.AssocFile.3GP !BASE!
-		call :SetAssociation .asf   WMP11.AssocFile.ASF !BASE!
-		call :SetAssociation .asx   WMP11.AssocFile.ASX !BASE!
-		call :SetAssociation .avi   WMP11.AssocFile.AVI !BASE!
-		call :SetAssociation .m1v   WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .m2t   WMP11.AssocFile.M2TS !BASE!
-		call :SetAssociation .m2ts  WMP11.AssocFile.M2TS !BASE!
-		call :SetAssociation .m2v   WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .m4v   WMP11.AssocFile.MP4 !BASE!
-		call :SetAssociation .mod   WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mov   WMP11.AssocFile.MOV !BASE!
-		call :SetAssociation .mp2v  WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mp4   WMP11.AssocFile.MP4 !BASE!
-		call :SetAssociation .mp4v  WMP11.AssocFile.MP4 !BASE!
-		call :SetAssociation .mpa   WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mpe   WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mpeg  WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mpg   WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mpv2  WMP11.AssocFile.MPEG !BASE!
-		call :SetAssociation .mts   WMP11.AssocFile.M2TS !BASE!
-		call :SetAssociation .ts    WMP11.AssocFile.TTS !BASE!
-		call :SetAssociation .tts   WMP11.AssocFile.TTS !BASE!
-		call :SetAssociation .wm    WMP11.AssocFile.ASF !BASE!
-		call :SetAssociation .wmd   WMP11.AssocFile.WMD !BASE!
-		call :SetAssociation .wms   WMP11.AssocFile.WMS !BASE!
-		call :SetAssociation .wmv   WMP11.AssocFile.WMV !BASE!
-		call :SetAssociation .wmx   WMP11.AssocFile.ASX !BASE!
-		call :SetAssociation .wmz   WMP11.AssocFile.WMZ !BASE!
-
 		
 		rem 对有 K-Lite Codec Pack的特判
 		rem 从这里开始，文档\TestForCheckingKLite.bat处于可用状态

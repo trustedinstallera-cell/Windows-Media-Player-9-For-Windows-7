@@ -1,568 +1,278 @@
-Windows Registry Editor Version 5.00
-
-;WARNING:BETA VERSION
-;Verified to line 0
-; ========== “Ù∆µŒƒº˛¿©’π√˚ ==========
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aac]
-@="WMP11.AssocFile.ADTS"
-"Content Type"="audio/vnd.dlna.adts"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aac\OpenWithProgIds]
-"WMP11.AssocFile.ADTS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.adt]
-@="WMP11.AssocFile.ADTS"
-"Content Type"="audio/vnd.dlna.adts"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.adt\OpenWithProgIds]
-"WMP11.AssocFile.ADTS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.adts]
-@="WMP11.AssocFile.ADTS"
-"Content Type"="audio/vnd.dlna.adts"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.adts\OpenWithProgIds]
-"WMP11.AssocFile.ADTS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aif]
-@="WMP11.AssocFile.AIFF"
-"Content Type"="audio/aiff"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aif\OpenWithProgIds]
-"WMP11.AssocFile.AIFF"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aifc]
-@="WMP11.AssocFile.AIFF"
-"Content Type"="audio/aiff"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aifc\OpenWithProgIds]
-"WMP11.AssocFile.AIFF"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aiff]
-@="WMP11.AssocFile.AIFF"
-"Content Type"="audio/aiff"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.aiff\OpenWithProgIds]
-"WMP11.AssocFile.AIFF"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.au]
-@="WMP11.AssocFile.AU"
-"Content Type"="audio/basic"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.au\OpenWithProgIds]
-"WMP11.AssocFile.AU"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.cda]
-@="WMP11.AssocFile.CDA"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.cda\OpenWithProgIds]
-"WMP11.AssocFile.CDA"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m3u]
-@="WMP11.AssocFile.m3u"
-"Content Type"="audio/x-mpegurl"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m3u\OpenWithProgIds]
-"WMP11.AssocFile.m3u"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m4a]
-@="WMP11.AssocFile.M4A"
-"Content Type"="audio/mp4"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m4a\OpenWithProgIds]
-"WMP11.AssocFile.M4A"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mid]
-@="WMP11.AssocFile.MIDI"
-"Content Type"="audio/mid"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mid\OpenWithProgIds]
-"WMP11.AssocFile.MIDI"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.midi]
-@="WMP11.AssocFile.MIDI"
-"Content Type"="audio/mid"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.midi\OpenWithProgIds]
-"WMP11.AssocFile.MIDI"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp2]
-@="WMP11.AssocFile.MP3"
-"Content Type"="audio/mpeg"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp2\OpenWithProgIds]
-"WMP11.AssocFile.MP3"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp3]
-@="WMP11.AssocFile.MP3"
-"Content Type"="audio/mpeg"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp3\OpenWithProgIds]
-"WMP11.AssocFile.MP3"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.rmi]
-@="WMP11.AssocFile.MIDI"
-"Content Type"="audio/mid"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.rmi\OpenWithProgIds]
-"WMP11.AssocFile.MIDI"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.snd]
-@="WMP11.AssocFile.AU"
-"Content Type"="audio/basic"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.snd\OpenWithProgIds]
-"WMP11.AssocFile.AU"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wav]
-@="WMP11.AssocFile.WAV"
-"Content Type"="audio/wav"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wav\OpenWithProgIds]
-"WMP11.AssocFile.WAV"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wax]
-@="WMP11.AssocFile.WAX"
-"Content Type"="audio/x-ms-wax"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wax\OpenWithProgIds]
-"WMP11.AssocFile.WAX"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wma]
-@="WMP11.AssocFile.WMA"
-"Content Type"="audio/x-ms-wma"
-"PerceivedType"="audio"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wma\OpenWithProgIds]
-"WMP11.AssocFile.WMA"=hex(0):
-
-; ==========  ”∆µŒƒº˛¿©’π√˚ ==========
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3g2]
-@="WMP11.AssocFile.3G2"
-"Content Type"="video/3gpp2"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3g2\OpenWithProgIds]
-"WMP11.AssocFile.3G2"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3gp]
-@="WMP11.AssocFile.3GP"
-"Content Type"="video/3gpp"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3gp\OpenWithProgIds]
-"WMP11.AssocFile.3GP"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3gp2]
-@="WMP11.AssocFile.3G2"
-"Content Type"="video/3gpp2"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3gp2\OpenWithProgIds]
-"WMP11.AssocFile.3G2"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3gpp]
-@="WMP11.AssocFile.3GP"
-"Content Type"="video/3gpp"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.3gpp\OpenWithProgIds]
-"WMP11.AssocFile.3GP"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.asf]
-@="WMP11.AssocFile.ASF"
-"Content Type"="video/x-ms-asf"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.asf\OpenWithProgIds]
-"WMP11.AssocFile.ASF"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.asx]
-@="WMP11.AssocFile.ASX"
-"Content Type"="video/x-ms-asf"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.asx\OpenWithProgIds]
-"WMP11.AssocFile.ASX"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.avi]
-@="WMP11.AssocFile.AVI"
-"Content Type"="video/avi"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.avi\OpenWithProgIds]
-"WMP11.AssocFile.AVI"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m1v]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m1v\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m2t]
-@="WMP11.AssocFile.M2TS"
-"Content Type"="video/vnd.dlna.mpeg-tts"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m2t\OpenWithProgIds]
-"WMP11.AssocFile.M2TS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m2ts]
-@="WMP11.AssocFile.M2TS"
-"Content Type"="video/vnd.dlna.mpeg-tts"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m2ts\OpenWithProgIds]
-"WMP11.AssocFile.M2TS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m2v]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m2v\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m4v]
-@="WMP11.AssocFile.MP4"
-"Content Type"="video/mp4"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.m4v\OpenWithProgIds]
-"WMP11.AssocFile.MP4"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mod]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mod\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mov]
-@="WMP11.AssocFile.MOV"
-"Content Type"="video/quicktime"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mov\OpenWithProgIds]
-"WMP11.AssocFile.MOV"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp2v]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp2v\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp4]
-@="WMP11.AssocFile.MP4"
-"Content Type"="video/mp4"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp4\OpenWithProgIds]
-"WMP11.AssocFile.MP4"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp4v]
-@="WMP11.AssocFile.MP4"
-"Content Type"="video/mp4"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mp4v\OpenWithProgIds]
-"WMP11.AssocFile.MP4"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpa]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpa\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpe]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpe\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpeg]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpeg\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpg]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpg\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpv2]
-@="WMP11.AssocFile.MPEG"
-"Content Type"="video/mpeg"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mpv2\OpenWithProgIds]
-"WMP11.AssocFile.MPEG"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mts]
-@="WMP11.AssocFile.M2TS"
-"Content Type"="video/vnd.dlna.mpeg-tts"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.mts\OpenWithProgIds]
-"WMP11.AssocFile.M2TS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.ts]
-@="WMP11.AssocFile.TTS"
-"Content Type"="video/vnd.dlna.mpeg-tts"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.ts\OpenWithProgIds]
-"WMP11.AssocFile.TTS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.tts]
-@="WMP11.AssocFile.TTS"
-"Content Type"="video/vnd.dlna.mpeg-tts"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.tts\OpenWithProgIds]
-"WMP11.AssocFile.TTS"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wm]
-@="WMP11.AssocFile.ASF"
-"Content Type"="video/x-ms-wm"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wm\OpenWithProgIds]
-"WMP11.AssocFile.ASF"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wmv]
-@="WMP11.AssocFile.WMV"
-"Content Type"="video/x-ms-wmv"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wmv\OpenWithProgIds]
-"WMP11.AssocFile.WMV"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wmx]
-@="WMP11.AssocFile.ASX"
-"Content Type"="video/x-ms-wmx"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wmx\OpenWithProgIds]
-"WMP11.AssocFile.ASX"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wmz]
-@="WMP11.AssocFile.WMZ"
-"Content Type"="application/x-ms-wmz"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wmz\OpenWithProgIds]
-"WMP11.AssocFile.WMZ"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wpl]
-@="WMP11.AssocFile.WPL"
-"Content Type"="application/vnd.ms-wpl"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wpl\OpenWithProgIds]
-"WMP11.AssocFile.WPL"=hex(0):
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wvx]
-@="WMP11.AssocFile.WVX"
-"Content Type"="video/x-ms-wvx"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wvx\OpenWithProgIds]
-"WMP11.AssocFile.WVX"=hex(0):
-
-; WTV Œƒº˛£®»Áπ˚œµÕ≥÷–”–£©
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wtv]
-@="WMP11.AssocFile.WTV"
-"PerceivedType"="video"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\.wtv\OpenWithProgIds]
-"WMP11.AssocFile.WTV"=hex(0):
-
-; ========== ProgID ∂®“Â£®“Ù∆µ£© ==========
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ADTS]
-@="ADTS “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ADTS\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ADTS\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AIFF]
-@="AIFF “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AIFF\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AIFF\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AU]
-@="AU “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AU\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AU\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.CDA]
-@="CD “Ù∆µ«˙ƒø"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.CDA\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.CDA\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.m3u]
-@="M3U ≤•∑≈¡–±Ì"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.m3u\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.m3u\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.M4A]
-@="M4A “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.M4A\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.M4A\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MIDI]
-@="MIDI “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MIDI\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MIDI\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MP3]
-@="MP3 “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MP3\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MP3\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WAV]
-@="WAV “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WAV\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WAV\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WAX]
-@="WAX “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WAX\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WAX\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMA]
-@="WMA “Ù∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMA\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMA\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-; ========== ProgID ∂®“Â£® ”∆µ£© ==========
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.3G2]
-@="3G2  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.3G2\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.3G2\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.3GP]
-@="3GP  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.3GP\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.3GP\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ASF]
-@="ASF  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ASF\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ASF\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ASX]
-@="ASX ≤•∑≈¡–±Ì"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ASX\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.ASX\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AVI]
-@="AVI  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AVI\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.AVI\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.M2TS]
-@="M2TS  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.M2TS\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.M2TS\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MOV]
-@="MOV  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MOV\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MOV\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MP4]
-@="MP4  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MP4\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MP4\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MPEG]
-@="MPEG  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MPEG\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.MPEG\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.TTS]
-@="TTS  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.TTS\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.TTS\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMV]
-@="WMV  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMV\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMV\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMZ]
-@="WMZ Œƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMZ\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WMZ\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WPL]
-@="WPL ≤•∑≈¡–±Ì"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WPL\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WPL\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WVX]
-@="WVX  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WVX\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WVX\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-; WTV ProgID£®»Áπ˚–Ë“™£©
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WTV]
-@="Windows TV  ”∆µŒƒº˛"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WTV\DefaultIcon]
-@="%ProgramFiles%\\Windows Media Player\\wmplayer.exe,0"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\WMP11.AssocFile.WTV\shell\open\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" \"%1\""
-
-; ========== ª÷∏¥ AudioCD ∫Õ DVD ==========
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\AudioCD]
-@="AudioCD"
-"EditFlags"=hex:02,00,10,00
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\AudioCD\DefaultIcon]
-@="%SystemRoot%\\System32\\wmploc.dll,-200"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\AudioCD\shell\play\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" /play \"%L\""
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\DVD]
-@="DVD"
-"EditFlags"=hex:02,00,10,00
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\DVD\DefaultIcon]
-@="%SystemRoot%\\System32\\wmploc.dll,-200"
-[HKEY_LOCAL_MACHINE\SOFTWARE\Classes\DVD\shell\play\command]
-@="\"%ProgramFiles%\\Windows Media Player\\wmplayer.exe\" /play \"%L\""
+ÔªøWindows Registry Editor Version 5.00
+
+; Êñá‰ª∂Êâ©Â±ïÂêçÂÖ≥ËÅî
+[HKEY_CLASSES_ROOT\.aac]
+@="AACFile"
+
+[HKEY_CLASSES_ROOT\.aif]
+@="AIFFFile"
+
+[HKEY_CLASSES_ROOT\.aifc]
+@="AIFFFile"
+
+[HKEY_CLASSES_ROOT\.aiff]
+@="AIFFFile"
+
+[HKEY_CLASSES_ROOT\.au]
+@="AUFile"
+
+[HKEY_CLASSES_ROOT\.avi]
+@="avifile"
+
+[HKEY_CLASSES_ROOT\.cda]
+@="CDAFile"
+
+[HKEY_CLASSES_ROOT\.mp2]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.mp2v]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.mp3]
+@="mp3file"
+
+[HKEY_CLASSES_ROOT\.mpa]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.mpe]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.mpeg]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.mpg]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.mpv2]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.snd]
+@="AUFile"
+
+[HKEY_CLASSES_ROOT\.wav]
+@="soundrec"
+
+[HKEY_CLASSES_ROOT\.wmv]
+@="WMVFile"
+
+[HKEY_CLASSES_ROOT\.wmx]
+@="ASXFile"
+
+[HKEY_CLASSES_ROOT\.wax]
+@="WAXFile"
+
+[HKEY_CLASSES_ROOT\.wma]
+@="wmafile"
+
+[HKEY_CLASSES_ROOT\.wmd]
+@="WMDFile"
+
+[HKEY_CLASSES_ROOT\.wmdb]
+@="WMP.WMDBFile"
+
+[HKEY_CLASSES_ROOT\.wmz]
+@="WMZFile"
+
+[HKEY_CLASSES_ROOT\.wms]
+@="WMSFile"
+
+[HKEY_CLASSES_ROOT\.asx]
+@="ASXFile"
+
+[HKEY_CLASSES_ROOT\.m1v]
+@="mpegfile"
+
+[HKEY_CLASSES_ROOT\.m3u]
+@="m3ufile"
+
+[HKEY_CLASSES_ROOT\.wm]
+@="ASFFile"
+
+; ‰øÆÊîπÁé∞Êúâ ProgID ÁöÑÂëΩ‰ª§ÂíåÂõæÊ†áÔºàÊåáÂêë x86 Ë∑ØÂæÑÔºâ
+; AIFFFile
+[HKEY_CLASSES_ROOT\AIFFFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\AIFFFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\AIFFFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\AIFFFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; AUFile
+[HKEY_CLASSES_ROOT\AUFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\AUFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\AUFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\AUFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; AVIFile
+[HKEY_CLASSES_ROOT\AVIFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\AVIFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\AVIFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:8 /Open \"%L\""
+[HKEY_CLASSES_ROOT\AVIFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:8 /Play \"%L\""
+
+; cdafile
+[HKEY_CLASSES_ROOT\cdafile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\cdafile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\cdafile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\cdafile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; mpegfile
+[HKEY_CLASSES_ROOT\mpegfile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\mpegfile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\mpegfile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:9 /Open \"%L\""
+[HKEY_CLASSES_ROOT\mpegfile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:9 /Play \"%L\""
+
+; mp3file
+[HKEY_CLASSES_ROOT\mp3file\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\mp3file\shell]
+@="play"
+[HKEY_CLASSES_ROOT\mp3file\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:6 /Open \"%L\""
+[HKEY_CLASSES_ROOT\mp3file\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:6 /Play \"%L\""
+
+; SoundRec
+[HKEY_CLASSES_ROOT\SoundRec\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\SoundRec\shell]
+@="play"
+[HKEY_CLASSES_ROOT\SoundRec\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\SoundRec\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; WMVFile
+[HKEY_CLASSES_ROOT\WMVFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\WMVFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\WMVFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:7 /Open \"%L\""
+[HKEY_CLASSES_ROOT\WMVFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:7 /Play \"%L\""
+
+; ASXFile
+[HKEY_CLASSES_ROOT\ASXFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\ASXFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\ASXFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\ASXFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; WAXFile
+[HKEY_CLASSES_ROOT\WAXFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\WAXFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\WAXFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\WAXFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; wmafile
+[HKEY_CLASSES_ROOT\wmafile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\wmafile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\wmafile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:5 /Open \"%L\""
+[HKEY_CLASSES_ROOT\wmafile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /prefetch:5 /Play \"%L\""
+
+; WMDFile
+[HKEY_CLASSES_ROOT\WMDFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\WMDFile\shell]
+@="open"
+[HKEY_CLASSES_ROOT\WMDFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /WMPackage:\"%L\""
+
+; WMZFile
+[HKEY_CLASSES_ROOT\WMZFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmploc.dll,-617"
+[HKEY_CLASSES_ROOT\WMZFile\shell]
+@="open"
+[HKEY_CLASSES_ROOT\WMZFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /layout:\"%L\""
+
+; WMSFile
+[HKEY_CLASSES_ROOT\WMSFile\shell]
+@="open"
+[HKEY_CLASSES_ROOT\WMSFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\" /layout:\"%L\""
+
+; WMP.WMDBFile
+[HKEY_CLASSES_ROOT\WMP.WMDBFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\WMP.WMDBFile\shell]
+@="open"
+[HKEY_CLASSES_ROOT\WMP.WMDBFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+
+; Êñ∞Âª∫ ProgID: ASFFile
+[HKEY_CLASSES_ROOT\ASFFile]
+@="Windows Media Èü≥È¢ë/ËßÜÈ¢ëÊñá‰ª∂"
+[HKEY_CLASSES_ROOT\ASFFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\ASFFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\ASFFile\shell\open]
+@="ÊâìÂºÄ(&O)"
+[HKEY_CLASSES_ROOT\ASFFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\ASFFile\shell\play]
+@="Êí≠Êîæ(&P)"
+[HKEY_CLASSES_ROOT\ASFFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; Êñ∞Âª∫ ProgID: m3ufile
+[HKEY_CLASSES_ROOT\m3ufile]
+@="MP3 Êí≠ÊîæÂàóË°®"
+[HKEY_CLASSES_ROOT\m3ufile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\m3ufile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\m3ufile\shell\open]
+@="ÊâìÂºÄ(&O)"
+[HKEY_CLASSES_ROOT\m3ufile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\m3ufile\shell\play]
+@="Êí≠Êîæ(&P)"
+[HKEY_CLASSES_ROOT\m3ufile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
+
+; Êñ∞Âª∫ ProgID: AACFile
+[HKEY_CLASSES_ROOT\AACFile]
+@="AAC Ê†ºÂºèÂ£∞Èü≥"
+[HKEY_CLASSES_ROOT\AACFile\DefaultIcon]
+@="C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe,-120"
+[HKEY_CLASSES_ROOT\AACFile\shell]
+@="play"
+[HKEY_CLASSES_ROOT\AACFile\shell\open]
+@="ÊâìÂºÄ(&O)"
+[HKEY_CLASSES_ROOT\AACFile\shell\open\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Open \"%L\""
+[HKEY_CLASSES_ROOT\AACFile\shell\play]
+@="Êí≠Êîæ(&P)"
+[HKEY_CLASSES_ROOT\AACFile\shell\play\command]
+@="\"C:\\Program Files (x86)\\Windows Media Player\\wmplayer.exe\"  /Play \"%L\""
