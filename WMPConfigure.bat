@@ -240,7 +240,6 @@ if not exist "1" (
 		::注意：Windows XP可以运行程序，但什么也不会发生
 		PinToTaskbar.exe > nul
 
-		pause
     )
     
     choice /c yn /m "重新注册打开方式？"
@@ -267,30 +266,10 @@ if not exist "1" (
     )
     
 	echo 所有操作已完成。现在可以尝试启动 Windows Media Player 了。
+	echo 是否重新启动文件资源管理器并刷新缓存？
     pause
 )
 
 :end
 exit
 
-:SetAssociation
-:: 参数1：扩展名（含点），参数2：Progid，参数3：起始位置
-set "ext=%~1"
-set "progid=%~2"
-set "BASE=%~3"
-:: 确保扩展名为小写（仅转换字母部分）
-for %%a in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do (
-    set "ext=!ext:%%a=%%a!"
-)
-set "key=%BASE%\!ext!\UserChoice"
-reg add "!key!" /v "Progid" /t REG_SZ /d "%progid%" /f
-
-:SetNoPromptForExt
-set "ext=%~1"
-:: 将扩展名转换为小写（兼容性处理）
-for %%a in (a b c d e f g h i j k l m n o p q r s t u v w x y z) do (
-    set "ext=!ext:%%a=%%a!"
-)
-set "key=HKCU\Software\Microsoft\MediaPlayer\Player\Extensions\!ext!"
-reg add "!key!" /v "Permissions" /t REG_DWORD /d 1 /f
-reg add "!key!" /v "Runtime"   /t REG_DWORD /d 1 /f
