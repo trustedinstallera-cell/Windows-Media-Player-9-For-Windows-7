@@ -1,48 +1,70 @@
-# Windows-Media-Player-9-For-Windows-7
-Run Windows Media Player 9 on Windows 7(R) without setup_wm.exe support
+> [!WARNING]
+>
+> **Note for non-Chinese users:** The binary files in this project are Simplified Chinese targeted only and has only been fully tested on Windows 7 SP1 x64. To adapt it for your language, please refer to [LANGUAGE_REPLACEMENT.md](LANGUAGE_REPLACEMENT.md) for manual replacement (advanced users only).
 
-# How to run
-Run WMPConfigure.bat and follow steps it given. Do not modify any other files, especially for file names.
+> [!CAUTION]
+> 杀毒软件可能会拦截系统文件操作，请提前添加信任。
+>
+> 该项目**仅在Windows 7 SP1 x64 Ultimate中测试通过，请谨慎使用该项目**
 
-## 可能遇到的问题
+> [!CAUTION]
+> **使用本工具需要一定的计算机基础**  
+> 本工具涉及系统文件替换、注册表修改等操作，适用于熟悉以下概念的用户：
+>
+> - 管理员身份运行
+> - 系统还原点
+> - UAC（用户账户控制）
+>
+> 如果你不熟悉上述术语，建议请懂电脑的朋友协助操作。因操作不当导致的系统问题，作者不承担责任。
 
-### #1 这个脚本是用来做什么的？
+> [!WARNING]
+> 本工具涉及系统文件替换，操作前请务必创建系统还原点。 ⚠️ **重要提醒**：操作前请备份数据。
+>
+> [!TIP]
+> 运行前建议先关闭所有正在运行的 Windows Media Player 进程。
 
-    该脚本用于将 Windows 7 系统中的 Windows Media Player 12 强制降级为旧版本（ Windows Media Player 9），可以满足部分怀旧需求，搭配Windows XP Luna主题包效果应该更好，如果你有能力使用破解版主题相关dll文件的话。
+## **项目简介**
 
-### #2 为什么不直接替换原来的文件？
+本工具用于怀旧需要，快速将 Windows Media Player 12降级为Windows Media Player 9 Series。
 
-    如果这样做，Windows Media Player将报出DLL版本错误问题，虽然已经确定检查的是哪个DLL，但最终会报出内部应用程序错误。
+## 💡 用法
 
-### #3 能否保留WMC(Windows Media Center)？
+1、以管理员身份运行该脚本，按1键以开始配置直到脚本提示重新启动计算机。
+2、再次打开脚本，按1键，脚本将开始部署 WMP 直到预设的选项所在位置。
 
-    目前没有找到相关的方法，即使在dism命令中只指定了卸载WMP。
+[!Tip]
+请注意事先保存您的工作，脚本要求计算机重新启动。
 
-### #4 运行结束后，我是否还要保留该脚本？
+[!TIP]
+如果遇到任何不确定的选项，直接按Y即可
 
-    如果你考虑在多用户环境下保留脚本，那么应该保留脚本。但是，wmp和wmp9xp两个文件夹可以不保留。
+## **原理说明**
 
-### #5 运行这个脚本会有什么风险？
+1、regsvr32可以用于注册具有DllRegisterServer接口的DLL类型文件；
+2、DisablePCA的值为1时，可以禁用程序兼容性助手（也可以定位到gpedit.msc->本地计算机 策略\计算机配置\管理模板\Windows 组件\应用程序兼容性；
+3、对于本脚本涉及到的文件类型，均按照.*格式保存在HKCR中，其中(默认)值的数值数据存储了用于识别的类型，FriendlyTypeName负责配置文件类型描述，\DefaultIcon\(默认)负责配置文件图标
 
-    除非运行还原点，否则你大概不能还原Windows Media Player。你当然还是可以使用“打开或关闭 Windows 功能”重新启用WMP和WMC，但这样做的结果是WMP直接报告安装不正确，WMC却能打开。
+##  **注意事项**
 
-### #6 我能不能使用其他编解码器？
+> ⚠️ **重要提醒**
+>
+> - **仅适用于简体中文版 Windows**：本工具默认文件为简体中文，其他语言系统无法直接使用（如需使用请参考 `LANGUAGE_REPLACEMENT.md`）。
+> - **管理员权限**：所有操作必须以管理员身份运行，否则会失败。
+> - **备份建议**：操作前建议创建系统还原点，以便恢复。
+> - **杀毒软件**：部分杀软可能会拦截系统文件替换，请添加信任或暂时关闭。
 
-    可以，至少在我的电脑上如此。我是先安装K-Lite Codec Pack再替换WMP的，至少到现在为止，WMP和PotPlayer都能运行，而且解码flac等文件也没有遇到过问题。但安装过程混乱且单凭记忆给出结论，建议谨慎操作
+## 系统要求
 
-### #7 脚本不能还原哪些旧版功能？
+## **常见问题**
 
-    **至少**包括：
-    
-    1) 最小模式不启动；
-    2) 部分音频信息显示不正确（全乱码，测试文件为日文，结果只显示英文；文件资源管理器和WMP对音频图片解析不是一个模块完成的，前者显示，但后者不显示），这个问题在Windows XP中也存在；
-    3) 并没有还原访问网页时的体验；
-    4) “脱机工作”无法选中，更不能打开媒体指南；
+### 1、我能不能使用setup_wm.exe？
 
-### #8 该脚本支持的操作系统版本有哪些？
+不能，除非关闭应用程序兼容性引擎并重新启动计算机，但是你只能得到这样的图片所示的结果。高帧率录屏测试显示，程序只能运行到Skins或注册Windows Media Player组件即终止。可以部分显示初次运行wmplayer.exe的界面，但代价是无法配置任何应用程序的兼容性。
 
-### #9 sfc /scannow命令还能不能正常使用？
+### 2、有没有多语言支持？
 
-### #10 要关闭杀毒软件吗？
+没有，这不是本脚本设置的初衷，而且只能选择一个语言版本进行配置。但是。如果有一定计算机基础，您也许可以参考[LANGUAGE_REPLACEMENT.md](LANGUAGE_REPLACEMENT.md) 。
 
-    建议临时关闭并添加排除项，至少XP中安装360测试时连mplayer2.exe都报毒
+## **免责声明**
+
+替换系统文件存在风险，操作前请确保已备份。且该做法可能违反EULA。作者不对因使用该项目导致的一系列问题负责。
