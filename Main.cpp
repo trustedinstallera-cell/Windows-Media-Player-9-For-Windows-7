@@ -134,16 +134,6 @@ ULONGLONG GetFreeSpaceEx(const std::string& path) {
     return 0;
 }
 
-// 创建空文件
-bool CreateEmptyFile(const std::string& path) {
-    HANDLE hFile = CreateFileA(path.c_str(), GENERIC_WRITE, 0, nullptr,
-        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (hFile == INVALID_HANDLE_VALUE)
-        return false;
-    CloseHandle(hFile);
-    return true;
-}
-
 // 递归复制目录
 bool CopyDirectory(const std::string& src, const std::string& dst) {
     if (!DirExists(src)) return false;
@@ -385,6 +375,75 @@ void CheckDependencies() {
 void MultiUsersSetup() {
     std::cout << "执行多用户部署...\n";
 
+    HKEY hKey;
+    DWORD dwValue = 0;
+    DWORD dwType = REG_DWORD;
+    DWORD dwSize = sizeof(DWORD);
+    LONG lResult = RegOpenKeyExA(
+        HKEY_LOCAL_MACHINE,
+        "SOFTWARE\\wmpConfig",
+        0,
+        KEY_READ,
+        &hKey
+    );
+    if (lResult == ERROR_SUCCESS) {
+        // 查询 InstalledState 的值
+        lResult = RegQueryValueExA(
+            hKey,
+            "InstalledState",    // 值名称
+            NULL,               // 保留参数
+            &dwType,            // 接收数据类型
+            (LPBYTE)&dwValue,   // 接收数据的缓冲区
+            &dwSize             // 缓冲区大小
+        );
+
+        if (lResult == ERROR_SUCCESS) {
+            switch (dwValue) {
+            case 2:
+                break;
+            default:
+                std::cout << "警告：可能没有完成安装任务，或注册表项被破坏。\n";
+                std::cout << "是否继续安装过程？(y/N)";
+                char choice;
+                std::cin >> choice;
+                switch (tolower(choice)) {
+                case 'y':
+                    goto BeginInst;
+                default:
+                    exit(7);
+                }
+                break;
+            }
+        }
+        else {
+            printf("读取失败，错误码: %lu\n", lResult);
+            std::cout << "请检查注册表项HKEY_LOCAL_MACHINE\\SOFTWARE\\wmpConfig的读取权限，然后再试一次。\n";
+            std::cout << "是否继续安装过程？(y/N)";
+            int choice;
+            std::cin >> choice;
+            switch (tolower(choice)) {
+            case 'y':
+                goto BeginInst;
+            default:
+                exit(8);
+            }
+        }
+
+    }
+    else {
+        std::cout << "警告：可能没有完成安装任务，或注册表项被破坏。\n";
+        std::cout << "是否继续安装过程？(y/N)";
+        int choice;
+        std::cin >> choice;
+        switch (tolower(choice)) {
+        case 'y':
+            goto BeginInst;
+        default:
+            exit(8);
+        }
+    }
+
+    BeginInst:
     // 尝试获取 SID（仅用于显示，实际写入 HKCU）
     std::string sid = GetCurrentUserSid();
     if (!sid.empty()) {
@@ -463,9 +522,61 @@ void ExecuteDeployment() {
         return; // RunAsAdmin 会 exit
     }
 
-    // 判断是第一阶段还是第二阶段（通过标记文件 "1"）
-    std::string markerPath = g_scriptDir + "\\" + VERSION_MARKER_FILE;
-    if (!FileExists(markerPath)) {
+    int stage = 0;
+
+    // 判断是第一阶段还是第二阶段
+    JudgeForStage:
+    HKEY hKey;
+    DWORD dwValue = 0;
+    DWORD dwType = REG_DWORD;
+    DWORD dwSize = sizeof(DWORD);
+    LONG lResult = RegOpenKeyExA(
+        HKEY_LOCAL_MACHINE,
+        "SOFTWARE\\wmpConfig",
+        0,
+        KEY_READ,
+        &hKey
+    );
+    if (lResult == ERROR_SUCCESS) {
+        // 查询 InstalledState 的值
+        lResult = RegQueryValueExA(
+            hKey,
+            "InstalledState",    // 值名称
+            NULL,               // 保留参数
+            &dwType,            // 接收数据类型
+            (LPBYTE)&dwValue,   // 接收数据的缓冲区
+            &dwSize             // 缓冲区大小
+        );
+
+        if (lResult == ERROR_SUCCESS) {
+            switch (dwValue) {
+            case 1:
+                std::cout << "执行第二阶段安装进程...";
+                stage = 2;
+                break;
+            default:
+                std::cout << "警告：可能没有完成上一阶段，或注册表项被破坏。\n";
+                break;
+            }
+        }
+        else if (lResult == ERROR_FILE_NOT_FOUND) {
+            std::cout << "执行第一阶段安装进程...";
+            stage = 1;
+        }
+        else {
+            printf("读取失败，错误码: %lu\n", lResult);
+            std::cout << "请检查注册表项HKEY_LOCAL_MACHINE\\SOFTWARE\\wmpConfig的读取权限，然后再试一次。\n";
+            system("pause");
+            goto JudgeForStage;
+        }
+
+        
+    }
+    else {
+        std::cout << "执行第一阶段安装进程...";
+        stage = 1;
+    }
+    if (stage == 1) {
         // 第一阶段
         std::cout << "第一阶段：卸载 Windows Media Center 和 Windows Media Player\n";
 
@@ -496,12 +607,31 @@ void ExecuteDeployment() {
 
         // 卸载 Media Center 和 Media Player
         std::cout << "卸载 Windows Media Center...\n";
-        ExecuteCommand("pkgmgr /uu:MediaCenter /quiet /norestart", true, false);
+        //ExecuteCommand("DISM /online /disable-feature /featurename:WindowsMediaCenter /NoRestart", true, false);
         std::cout << "卸载 Windows Media Player...\n";
-        ExecuteCommand("pkgmgr /uu:WindowsMediaPlayer /quiet /norestart", true, false);
+        system("DISM /online /disable-feature /featurename:WindowsMediaPlayer /norestart");
+        // 创建标记
+        LONG result = RegCreateKeyEx(
+            HKEY_LOCAL_MACHINE,          // 根键
+            L"SOFTWARE\\wmpConfig",         // 子键路径
+            0,                          // 保留
+            NULL,                       // 类名（可为NULL）
+            REG_OPTION_NON_VOLATILE,    // 选项（永久保存）
+            KEY_WRITE,                  // 访问权限
+            NULL,                       // 安全属性
+            &hKey,                      // 返回的句柄
+            NULL                        // 是否新创建的标志（可为NULL）
+        );
+        DWORD dwordValue = 1;
+        result = RegSetValueEx(
+            hKey,
+            L"InstalledState",
+            0,
+            REG_DWORD,
+            (const BYTE*)&dwordValue,
+            sizeof(DWORD)
+        );
 
-        // 创建标记文件
-        CreateEmptyFile(markerPath);
         std::cout << "第一阶段已完成。请尽快保存手头的工作，重新启动计算机，然后再次运行该程序。\n";
         std::cout << "现在就重新启动计算机吗？(y/n): ";
         std::cin >> ch;
@@ -511,7 +641,7 @@ void ExecuteDeployment() {
             ExitWindowsEx(EWX_REBOOT, SHTDN_REASON_MINOR_HOTFIX_UNINSTALL);
         }
     }
-    else {
+    else if(stage == 2){
         // 第二阶段
         std::cout << "第二阶段：复制文件并注册组件\n";
 
@@ -588,6 +718,7 @@ void ExecuteDeployment() {
         // 多用户注册表设置
         MultiUsersSetup();  // 此函数会询问快捷方式等，并写入注册表
     }
+    RegCloseKey(hKey);
 }
 
 void clrscr() {    //清空屏幕
@@ -602,6 +733,8 @@ void clrscr() {    //清空屏幕
     SetConsoleCursorPosition(hdout, pos);    //光标定位到窗口左上角
 }
 
+
+
 // 程序入口
 int main() {
     // 设置控制台代码页为 UTF-8 或系统默认
@@ -615,6 +748,7 @@ int main() {
     size_t pos = g_scriptDir.find_last_of("\\");
     if (pos != std::string::npos)
         g_scriptDir = g_scriptDir.substr(0, pos);
+
 
     while (true) {
         ShowMenu();
@@ -648,7 +782,7 @@ int main() {
             break;
         default:
             std::cout << "未知选项。\n";
-            
+
         }
         system("pause");
         clrscr();
