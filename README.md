@@ -54,13 +54,22 @@
 > - **杀毒软件**：部分杀软可能会拦截系统文件替换，请添加信任或暂时关闭。
 
 ## 系统要求
-目前仅测试过 Windows 7 SP1 x64，也是为该系统设计的。
+**最低要求：** Windows Vista
+**推荐环境：** Windows 7 SP1 及以上的 x64 架构的操作系统
+**稳定性说明：**
+
+  - 64位系统（Windows 7 及以上）：最佳稳定性
+  - 32位系统（Windows 7 及以上）：稳定性良好
+  - Windows Vista：基础功能可用，但稳定性未经充分测试且做法不符合常规流程
+    **已经测试的系统：**
+    Windows 7 SP1 x64、Windows Vista SP2 x64（不建议尝试）、Windows 8.1 x64
+    Windows 10 version 1511 x86、Windows 10 version 1909 x64
 
 ## **常见问题**
 
 ### 1、我能不能使用setup_wm.exe？
 
-不能，除非关闭应用程序兼容性引擎并重新启动计算机，但是你只能得到这样的图片所示的结果。高帧率录屏测试显示，程序只能运行到Skins或注册Windows Media Player组件即终止。可以部分显示初次运行wmplayer.exe的界面，但代价是无法配置任何应用程序的兼容性。
+不能，除非关闭应用程序兼容性引擎并重新启动计算机，但是你只能得到[这样的](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/blob/main/Screenshots/Incorrect-Result/Failed%20to%20install%20with%20capability%20options%20disabled.png)结果。高帧率录屏测试显示，程序只能运行到Skins或注册Windows Media Player组件即终止。可以部分显示初次运行wmplayer.exe的界面，但代价是无法配置任何应用程序的兼容性。
 
 ### 2、有没有多语言支持？
 
