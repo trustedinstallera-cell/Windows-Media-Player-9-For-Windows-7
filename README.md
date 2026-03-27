@@ -21,7 +21,7 @@
 > 本工具涉及系统文件替换，操作前请务必创建系统还原点。 ⚠️ **重要提醒**：操作前请备份数据。
 
 > [!TIP]
-> 运行前建议先关闭所有正在运行的 Windows Media Player 进程。
+> 运行前建议先关闭所有正在运行的 Windows Media Player 与 Windows Media Center 进程。
 
 ## **项目简介**
 
@@ -41,7 +41,9 @@
 ## **原理说明**
 
 1、regsvr32可以用于注册具有DllRegisterServer接口的DLL类型文件；
+
 2、DisablePCA的值为1时，可以禁用程序兼容性助手（也可以定位到gpedit.msc->本地计算机 策略\计算机配置\管理模板\Windows 组件\应用程序兼容性；
+
 3、对于本脚本涉及到的文件类型，均按照.*格式保存在HKCR中，其中(默认)值的数值数据存储了用于识别的类型，FriendlyTypeName负责配置文件类型描述，\DefaultIcon\(默认)负责配置文件图标
 
 ##  **注意事项**
