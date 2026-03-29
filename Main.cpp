@@ -3,12 +3,14 @@
 // 需要链接以下库：Advapi32.lib, Shell32.lib, Ole32.lib
 #pragma warning(disable : 4996)
 #pragma prefast(disable: 28159)
+#define _WIN32_WINNT 0x0501
 #include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
 #include <algorithm>
 #include <cctype>
+#include <codecvt>
 #include <windows.h>
 #include <shellapi.h>
 #include <shlobj.h>
@@ -36,7 +38,55 @@ std::vector<std::string> TARGET_DIR;
 std::string g_scriptDir;
 bool is64Bit = false; // 记录系统是否为64位
 
+// 对 CPU 架构宏定义的移植
+#define PROCESSOR_ARCHITECTURE_PPC              3
+#define PROCESSOR_ARCHITECTURE_SHX              4
+#define PROCESSOR_ARCHITECTURE_ARM              5
+#define PROCESSOR_ARCHITECTURE_IA64             6
+#define PROCESSOR_ARCHITECTURE_ALPHA64          7
+#define PROCESSOR_ARCHITECTURE_MSIL             8
+#define PROCESSOR_ARCHITECTURE_AMD64            9
+#define PROCESSOR_ARCHITECTURE_IA32_ON_WIN64    10
+#define PROCESSOR_ARCHITECTURE_NEUTRAL          11
+#define PROCESSOR_ARCHITECTURE_ARM64            12
+#define PROCESSOR_ARCHITECTURE_ARM32_ON_WIN64   13
+#define PROCESSOR_ARCHITECTURE_IA32_ON_ARM64    14
+
+std::wofstream file("log.txt");
+
 BOOL ProcessDirectory(LPCWSTR lpszRoot);
+
+inline std::wstring to_wstring(std::string& str) {
+    int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
+    std::wstring wideStr(wideLen, L'\0');
+    MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, &wideStr[0], wideLen);
+    return wideStr;
+}
+
+inline std::string to_string(std::wstring& wstr) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    return converter.to_bytes(wstr);
+}
+
+BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey)
+{
+    HKEY hKey;
+    LONG lResult = RegOpenKeyEx(hKeyRoot, lpszSubKey, 0, KEY_READ | KEY_WRITE, &hKey);
+    if (lResult != ERROR_SUCCESS)
+        return FALSE;
+
+    // 枚举并删除所有子项
+    TCHAR szSubKeyName[256];
+    DWORD dwSize = 256;
+    while (RegEnumKeyEx(hKey, 0, szSubKeyName, &dwSize, NULL, NULL, NULL, NULL) == ERROR_SUCCESS)
+    {
+        DeleteKeyRecursively(hKey, szSubKeyName);
+        dwSize = 256;
+    }
+
+    RegCloseKey(hKey);
+    return RegDeleteKey(hKeyRoot, lpszSubKey) == ERROR_SUCCESS;
+}
 
 // 辅助函数：获取最后错误字符串
 std::string GetLastErrorStr() {
@@ -276,73 +326,6 @@ std::string GetCurrentUserSid() {
     std::string result(sidStr);
     LocalFree(sidStr);
     return result;
-}
-
-// 递归删除包含 "Media" 的注册表项
-void DeleteKeysContainingMedia(HKEY rootKey, const std::wstring& subPath) {
-    HKEY hKey;
-    // 打开当前注册表项（需要读写权限）
-    LONG result = RegOpenKeyExW(rootKey, subPath.c_str(), 0, KEY_READ | KEY_WRITE, &hKey);
-    if (result != ERROR_SUCCESS) {
-        // 无法打开（可能是权限不足），直接返回
-        return;
-    }
-
-    // 枚举所有子项的名称
-    std::vector<std::wstring> subKeys;
-    DWORD index = 0;
-    wchar_t subKeyName[256];
-    DWORD subKeyNameLen;
-    while (true) {
-        subKeyNameLen = 256;
-        result = RegEnumKeyExW(hKey, index, subKeyName, &subKeyNameLen, nullptr, nullptr, nullptr, nullptr);
-        if (result == ERROR_NO_MORE_ITEMS) {
-            break;
-        }
-        if (result == ERROR_SUCCESS) {
-            subKeys.push_back(subKeyName);
-            ++index;
-        }
-        else {
-            // 遇到其他错误，停止枚举
-            break;
-        }
-    }
-    RegCloseKey(hKey);
-
-    // 递归处理每个子项
-    for (const auto& subKey : subKeys) {
-        std::wstring newSubPath;
-        if (subPath.empty()) {
-            newSubPath = subKey;
-        }
-        else {
-            newSubPath = subPath + L"\\" + subKey;
-        }
-        DeleteKeysContainingMedia(rootKey, newSubPath);
-    }
-
-    // 检查当前项名称是否包含 "Media"（不区分大小写）
-    if (!subPath.empty()) {
-        // 提取最后一部分作为键名
-        size_t lastBackslash = subPath.find_last_of(L'\\');
-        std::wstring keyName = (lastBackslash == std::wstring::npos) ? subPath : subPath.substr(lastBackslash + 1);
-
-        // 不区分大小写查找 "Media"
-        if (keyName.find(L"Media") != std::wstring::npos ||
-            keyName.find(L"media") != std::wstring::npos) {
-            // 尝试删除整个子树
-            result = RegDeleteTreeW(rootKey, subPath.c_str());
-            if (result == ERROR_SUCCESS) {
-                // 可选：输出删除成功信息
-                std::wcout << L"Deleted: " << subPath << std::endl;
-            }
-            else {
-                // 可选：输出删除失败信息
-                std::wcout << L"Failed to delete: " << subPath << L", error: " << result << std::endl;
-            }
-        }
-    }
 }
 
 // 写入注册表项（MultiUsers 部分）
@@ -713,6 +696,39 @@ EndCopyingLink:
     exit(0);
 }
 
+BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
+    HANDLE hSnapshort = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hSnapshort == INVALID_HANDLE_VALUE)
+    {
+        printf("CreateToolhelp32Snapshot调用失败！\n");
+        return -1;
+    }
+    // 获得线程列表  
+    PROCESSENTRY32 stcProcessInfo;
+    stcProcessInfo.dwSize = sizeof(stcProcessInfo);
+    BOOL  bRet = Process32First(hSnapshort, &stcProcessInfo);
+    while (bRet)
+    {
+        for (auto& str : std::vector<std::wstring>{ L"wmplayer.exe",L"wm_setup.exe",L"ehshell.exe" }) {
+            std::wstring currentProcess(stcProcessInfo.szExeFile);
+            if (currentProcess == str)
+            {
+                HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, stcProcessInfo.th32ProcessID);	//获取进程句柄
+                TerminateProcess(hProcess, 0);    //结束进程
+                int lastError = GetLastError();
+                if (lastError != 0) {
+                    std::cout << "无法结束" << to_string(str) << "。错误代码：" << lastError << "。错误消息：" << GetLastErrorStr();
+                }
+                CloseHandle(hProcess);
+            }
+        }
+        bRet = Process32Next(hSnapshort, &stcProcessInfo);
+    }
+    CloseHandle(hSnapshort);
+    return 0;
+}
+
+
 // 部署过程（选项 1）
 void ExecuteDeployment() {
     // 检查必备文件夹
@@ -808,6 +824,13 @@ JudgeForStage:
         stage = 1;
     }
 Execute:
+    std::cout << "程序将结束 Windows Media Player 与 Windows Media Center。请确保它们已经停止运行。\n";
+    system("pause");
+    if (EnumWindows(CloseWindows, 0)) {
+        std::cerr << "错误：无法结束进程，请手动执行，然后按任意键。\n";
+        std::cout << "注意：若没有结束进程，那么写入文件将失败，程序将无法继续执行。\n";
+    }
+    system("pause");
     if (stage == 1) {
         // 第一阶段
         std::cout << "第一阶段：卸载 Windows Media Center 和 Windows Media Player\n";
@@ -838,12 +861,13 @@ Execute:
         }
 
         ch = 'c';
-
+        printf("=====HERE");
         HMODULE hNtdll = GetModuleHandleA("ntdll.dll");
         if (hNtdll) {
             typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
             RtlGetVersionPtr RtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hNtdll, "RtlGetVersion");
             if (RtlGetVersion) {
+                
                 RTL_OSVERSIONINFOW osvi = { sizeof(osvi) };
                 LONG result = RtlGetVersion(&osvi);  // ← 关键：调用函数填充数据
                 if (result == 0) {  // 0 表示成功
@@ -853,35 +877,89 @@ Execute:
                         std::cout << "警告：无法证明接下来的操作不会引起任何问题。按下任意键后，若出现问题，您可能需要通过系统还原点或安装光盘进行还原。（您现在仍然可以安全退出）\n";
                         system("pause");
                         std::cout << "正在尝试更改写入权限...\n";
-                        if (is64Bit) {
-                            system("takeown /f \"C:\\Program Files (x86)\\Windows Media Player\\*\" /r /d y && icacls \"C:\\Program Files (x86)\\Windows Media Player\\*\" /grant administrators:F /t");
-                        }
-                        system("takeown /f \"C:\\Program Files\\Windows Media Player\\*\" /r /d y && icacls \"C:\\Program Files\\Windows Media Player\\*\" /grant administrators:F /t");
                         
-                        std::cout << "正在删除原有配置...\n";
-                        // 需要遍历的根键
-                        HKEY rootKeys[] = {
-                            HKEY_CLASSES_ROOT,
-                            HKEY_CURRENT_USER,
-                            HKEY_LOCAL_MACHINE,
-                            HKEY_USERS,
-                            HKEY_CURRENT_CONFIG
-                        };
-                        const wchar_t* rootNames[] = {
-                            L"HKEY_CLASSES_ROOT",
-                            L"HKEY_CURRENT_USER",
-                            L"HKEY_LOCAL_MACHINE",
-                            L"HKEY_USERS",
-                            L"HKEY_CURRENT_CONFIG"
-                        };
+                        LPCWSTR filePath = is64Bit?
+                            L"C:\\Program Files (x86)\\Windows Media Player":
+                            L"C:\\Program Files\\Windows Media Player"; // 目标文件路径
 
-                        // 遍历每个根键
-                        for (int i = 0; i < sizeof(rootKeys) / sizeof(rootKeys[0]); ++i) {
-                            std::wcout << L"Scanning " << rootNames[i] << L"..." << std::endl;
-                            DeleteKeysContainingMedia(rootKeys[i], L"");
+                        // 获取当前用户 SID
+                        HANDLE hToken = NULL;
+                        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+                           printf("OpenProcessToken failed\n");
+                           system("pause");
                         }
 
-                        system("pause");
+                        DWORD dwSize = 0;
+                        GetTokenInformation(hToken, TokenUser, NULL, 0, &dwSize);
+                        PTOKEN_USER pTokenUser = (PTOKEN_USER)malloc(dwSize);
+                        if (!GetTokenInformation(hToken, TokenUser, pTokenUser, dwSize, &dwSize)) {
+                            printf("GetTokenInformation failed\n");
+                            CloseHandle(hToken);
+                            free(pTokenUser);
+                            system("pause");
+                        }
+                        CloseHandle(hToken);
+
+                        // 设置文件所有者
+                        DWORD res = SetNamedSecurityInfoW(
+                            (LPWSTR)filePath,
+                            SE_FILE_OBJECT,
+                            OWNER_SECURITY_INFORMATION,
+                            pTokenUser->User.Sid,
+                            NULL, NULL, NULL
+                        );
+                        if (res != ERROR_SUCCESS) {
+                            printf("SetNamedSecurityInfo (Owner) failed");
+                            free(pTokenUser);
+                            system("pause");
+                        }
+
+                        // 创建完全控制的 ACE
+                        EXPLICIT_ACCESSW ea = { 0 };
+                        ea.grfAccessPermissions = GENERIC_ALL;
+                        ea.grfAccessMode = SET_ACCESS;
+                        ea.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
+                        ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+                        ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
+                        ea.Trustee.ptstrName = (LPWSTR)pTokenUser->User.Sid;
+
+                        PACL pOldDACL = NULL, pNewDACL = NULL;
+                        res = GetNamedSecurityInfoW(
+                            filePath, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION,
+                            NULL, NULL, &pOldDACL, NULL, NULL
+                        );
+                        if (res != ERROR_SUCCESS) {
+                            printf("GetNamedSecurityInfo failed\n");
+                            free(pTokenUser);
+                            system("pause");
+                        }
+
+                        res = SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL);
+                        if (res != ERROR_SUCCESS) {
+                            printf("SetEntriesInAcl failed\n");
+                            free(pTokenUser);
+                            system("pause");
+                        }
+
+                        // 应用新的 DACL
+                        res = SetNamedSecurityInfoW(
+                            (LPWSTR)filePath,
+                            SE_FILE_OBJECT,
+                            DACL_SECURITY_INFORMATION,
+                            NULL, NULL, pNewDACL, NULL
+                        );
+                        if (res != ERROR_SUCCESS) {
+                            //PrintLastError("SetNamedSecurityInfo (DACL) failed");
+                        }
+                        else {
+                            std::wcout << L"成功获取所有权并赋予完全控制权限: " << filePath << std::endl;
+                        }
+
+                        if (pNewDACL) LocalFree(pNewDACL);
+                        free(pTokenUser);
+
+                        
+
                     }
                     else {
 
@@ -1137,6 +1215,12 @@ Execute:
 
         // 关闭句柄
         RegCloseKey(hKeyB);
+
+        std::cout << "正在删除原有配置...\n";
+        HKEY hKeyRemove = HKEY_LOCAL_MACHINE;
+        const wchar_t* lpStr = L"SOFTWARE\\Wow6432Node\\Microsoft\\MediaPlayer\\Setup\\Installed Versions";
+        BOOL resultRemove = 0;
+        resultRemove = DeleteKeyRecursively(hKeyRemove, lpStr);
 
         // 多用户注册表设置
         MultiUsersSetup();  // 此函数会询问快捷方式等，并写入注册表
