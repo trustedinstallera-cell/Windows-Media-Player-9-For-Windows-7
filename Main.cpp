@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stack>
 #include <fstream>
 #include <algorithm>
 #include <cctype>
@@ -21,6 +22,7 @@
 #include <winternl.h>   // 用于 RtlGetVersion (兼容 XP)
 #include <shlwapi.h>
 #include <tchar.h>
+#include <strsafe.h>
 
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "Shell32.lib")
@@ -37,6 +39,7 @@ std::vector<std::string> TARGET_DIR;
 // 全局变量（用于保存当前脚本所在目录）
 std::string g_scriptDir;
 bool is64Bit = false; // 记录系统是否为64位
+std::string usernameStr;
 
 // 对 CPU 架构宏定义的移植
 #define PROCESSOR_ARCHITECTURE_PPC              3
@@ -55,6 +58,7 @@ bool is64Bit = false; // 记录系统是否为64位
 std::wofstream file("log.txt");
 
 BOOL ProcessDirectory(LPCWSTR lpszRoot);
+bool SetFileOwner(LPWSTR path, PSID pNewOwnerSid);
 
 inline std::wstring to_wstring(std::string& str) {
     int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
@@ -182,8 +186,8 @@ void UnpinFromTaskbar(const std::string& lnkPath)
     );
 }
 
-// 启用关机特权
-BOOL EnableShutdownPrivilege()
+// 启用特权
+BOOL EnableShutdownPrivilege(DWORD DesiredAccess)
 {
     HANDLE hToken;
     TOKEN_PRIVILEGES tp;
@@ -191,7 +195,7 @@ BOOL EnableShutdownPrivilege()
 
     // 1. 打开当前进程的访问令牌
     if (!OpenProcessToken(GetCurrentProcess(),
-        TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+        DesiredAccess,
         &hToken))
     {
         printf("OpenProcessToken 失败，错误码: %lu\n", GetLastError());
@@ -277,9 +281,9 @@ void RegisterFiles(std::string& dir) {
     if (hFind != INVALID_HANDLE_VALUE) {
         do {
             if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                std::string file = dir + "\\" + ffd.cFileName;
-                std::cout << "正在注册 " << file << " ..." << std::endl;
-                std::string cmd = "regsvr32 /s \"" + file + "\"";
+                std::string currentFile = dir + "\\" + ffd.cFileName;
+                std::cout << "正在注册 " << currentFile << " ..." << std::endl;
+                std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
                 ExecuteCommand(cmd, true, false);
             }
         } while (FindNextFileA(hFind, &ffd) != 0);
@@ -290,9 +294,9 @@ void RegisterFiles(std::string& dir) {
     if (hFind != INVALID_HANDLE_VALUE) {
         do {
             if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                std::string file = dir + "\\" + ffd.cFileName;
-                std::cout << "正在注册 " << file << " ..." << std::endl;
-                std::string cmd = "regsvr32 /s \"" + file + "\"";
+                std::string currentFile = dir + "\\" + ffd.cFileName;
+                std::cout << "正在注册 " << currentFile << " ..." << std::endl;
+                std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
                 ExecuteCommand(cmd, true, false);
             }
         } while (FindNextFileA(hFind, &ffd) != 0);
@@ -326,6 +330,35 @@ std::string GetCurrentUserSid() {
     std::string result(sidStr);
     LocalFree(sidStr);
     return result;
+}
+
+bool GetCurrentUserSid(PSID* ppSid) {
+    HANDLE hToken;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        return false;
+    }
+
+    DWORD dwSize = 0;
+    GetTokenInformation(hToken, TokenUser, nullptr, 0, &dwSize);
+
+    PTOKEN_USER pTokenUser = (PTOKEN_USER)malloc(dwSize);
+    if (!pTokenUser) {
+        CloseHandle(hToken);
+        return false;
+    }
+
+    BOOL result = GetTokenInformation(hToken, TokenUser,
+        pTokenUser, dwSize, &dwSize);
+    if (result) {
+        // 复制SID
+        DWORD sidSize = GetLengthSid(pTokenUser->User.Sid);
+        *ppSid = malloc(sidSize);
+        CopySid(sidSize, *ppSid, pTokenUser->User.Sid);
+    }
+
+    free(pTokenUser);
+    CloseHandle(hToken);
+    return result == TRUE;
 }
 
 // 写入注册表项（MultiUsers 部分）
@@ -603,7 +636,6 @@ BeginInst:
                         char* username = new char[usernameSize];
                         DWORD usernameLen = GetEnvironmentVariableA("USERNAME", username, usernameSize);
 
-                        std::string usernameStr;
                         if (usernameLen == 0) {
                             std::cerr << "错误：无法正确调用GetEnvironmentVariable函数。请手动输入用户名。\n";
                             do {
@@ -697,6 +729,8 @@ EndCopyingLink:
 }
 
 BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
+    (void)lParam;
+    (void)hwnd;
     HANDLE hSnapshort = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnapshort == INVALID_HANDLE_VALUE)
     {
@@ -861,7 +895,6 @@ Execute:
         }
 
         ch = 'c';
-        printf("=====HERE");
         HMODULE hNtdll = GetModuleHandleA("ntdll.dll");
         if (hNtdll) {
             typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
@@ -878,87 +911,13 @@ Execute:
                         system("pause");
                         std::cout << "正在尝试更改写入权限...\n";
                         
-                        LPCWSTR filePath = is64Bit?
-                            L"C:\\Program Files (x86)\\Windows Media Player":
-                            L"C:\\Program Files\\Windows Media Player"; // 目标文件路径
-
-                        // 获取当前用户 SID
-                        HANDLE hToken = NULL;
-                        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
-                           printf("OpenProcessToken failed\n");
-                           system("pause");
-                        }
-
-                        DWORD dwSize = 0;
-                        GetTokenInformation(hToken, TokenUser, NULL, 0, &dwSize);
-                        PTOKEN_USER pTokenUser = (PTOKEN_USER)malloc(dwSize);
-                        if (!GetTokenInformation(hToken, TokenUser, pTokenUser, dwSize, &dwSize)) {
-                            printf("GetTokenInformation failed\n");
-                            CloseHandle(hToken);
-                            free(pTokenUser);
-                            system("pause");
-                        }
-                        CloseHandle(hToken);
-
-                        // 设置文件所有者
-                        DWORD res = SetNamedSecurityInfoW(
-                            (LPWSTR)filePath,
-                            SE_FILE_OBJECT,
-                            OWNER_SECURITY_INFORMATION,
-                            pTokenUser->User.Sid,
-                            NULL, NULL, NULL
-                        );
-                        if (res != ERROR_SUCCESS) {
-                            printf("SetNamedSecurityInfo (Owner) failed");
-                            free(pTokenUser);
-                            system("pause");
-                        }
-
-                        // 创建完全控制的 ACE
-                        EXPLICIT_ACCESSW ea = { 0 };
-                        ea.grfAccessPermissions = GENERIC_ALL;
-                        ea.grfAccessMode = SET_ACCESS;
-                        ea.grfInheritance = SUB_CONTAINERS_AND_OBJECTS_INHERIT;
-                        ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
-                        ea.Trustee.TrusteeType = TRUSTEE_IS_USER;
-                        ea.Trustee.ptstrName = (LPWSTR)pTokenUser->User.Sid;
-
-                        PACL pOldDACL = NULL, pNewDACL = NULL;
-                        res = GetNamedSecurityInfoW(
-                            filePath, SE_FILE_OBJECT, DACL_SECURITY_INFORMATION,
-                            NULL, NULL, &pOldDACL, NULL, NULL
-                        );
-                        if (res != ERROR_SUCCESS) {
-                            printf("GetNamedSecurityInfo failed\n");
-                            free(pTokenUser);
-                            system("pause");
-                        }
-
-                        res = SetEntriesInAclW(1, &ea, pOldDACL, &pNewDACL);
-                        if (res != ERROR_SUCCESS) {
-                            printf("SetEntriesInAcl failed\n");
-                            free(pTokenUser);
-                            system("pause");
-                        }
-
-                        // 应用新的 DACL
-                        res = SetNamedSecurityInfoW(
-                            (LPWSTR)filePath,
-                            SE_FILE_OBJECT,
-                            DACL_SECURITY_INFORMATION,
-                            NULL, NULL, pNewDACL, NULL
-                        );
-                        if (res != ERROR_SUCCESS) {
-                            //PrintLastError("SetNamedSecurityInfo (DACL) failed");
-                        }
-                        else {
-                            std::wcout << L"成功获取所有权并赋予完全控制权限: " << filePath << std::endl;
-                        }
-
-                        if (pNewDACL) LocalFree(pNewDACL);
-                        free(pTokenUser);
-
-                        
+                        std::string filePath = is64Bit?
+                            "C:\\Program Files (x86)\\Windows Media Player":
+                            "C:\\Program Files\\Windows Media Player"; // 目标文件路径
+                        std::string command =
+                            "takeown /f \"" + filePath + "\" /r /d y && "  // /r 递归获取所有权，/d y 自动确认
+                            "icacls \"" + filePath + "\" /grant Admin:(OI)(CI)F /t /c /q";  // /t 遍历子项，/c 继续错误，/q 安静模式
+                        system(command.c_str());
 
                     }
                     else {
@@ -998,7 +957,7 @@ Execute:
                     );
                     if (ch == 'y' || ch == 'Y') {
                         //ExecuteCommand("shutdown -r -t 0", false, false);
-                        BOOL res = EnableShutdownPrivilege();
+                        BOOL res = EnableShutdownPrivilege(TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY);
                         if (res) {
                             ExitWindowsEx(EWX_REBOOT, SHTDN_REASON_MAJOR_APPLICATION | SHTDN_REASON_MINOR_HOTFIX_UNINSTALL);
                         }
@@ -1109,20 +1068,26 @@ Execute:
         for (std::string& targetDir : TARGET_DIR) {
             if (DirExists(targetDir)) {
                 std::cout << "正在删除残留的文件...\n";
-                wchar_t target[MAX_PATH];
-                const char* str = targetDir.c_str();
-                MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str, static_cast<DWORD>(targetDir.length()), target, 0);
 
-                ProcessDirectory(target);
-                // 创建持久的字符串对象
-                std::string path = targetDir + "\0";  // 注意：实际上这里不需要显式加 \0
-                                                       // SHFileOperation 需要双 null 终止
+                // 使用动态分配的缓冲区
+                std::string targetPath = targetDir;  // 例如 "C:\\Program Files\\Windows Media Player"
+                targetPath.push_back('\0');           // 添加第一个null终止符
+                targetPath.push_back('\0');           // 添加第二个null终止符（双null终止）
+
                 SHFILEOPSTRUCTA fos = { 0 };
+                fos.hwnd = NULL;
                 fos.wFunc = FO_DELETE;
-                fos.pFrom = path.c_str();  // path 对象在整个作用域内都有效
-                fos.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+                fos.pFrom = targetPath.c_str();
+                fos.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI | FOF_ALLOWUNDO;
+                // 注意：FOF_ALLOWUNDO 会移动到回收站，如果需要直接删除，去掉此项
 
-                SHFileOperationA(&fos);
+                int result = SHFileOperationA(&fos);
+                if (result != 0) {
+                    std::cout << "删除失败，错误码: " << result << std::endl;
+                    if (fos.fAnyOperationsAborted) {
+                        std::cout << "操作被用户或系统中断" << std::endl;
+                    }
+                }
             }
         }
 
