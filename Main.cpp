@@ -36,10 +36,11 @@ const std::string WMP_DIR = "wmp";
 
 std::vector<std::string> TARGET_DIR;
 
-// 全局变量（用于保存当前脚本所在目录）
+// 全局变量
 std::string g_scriptDir;
 bool is64Bit = false; // 记录系统是否为64位
 std::string usernameStr;
+bool isAuto = false;
 
 // 对 CPU 架构宏定义的移植
 #define PROCESSOR_ARCHITECTURE_PPC              3
@@ -54,6 +55,17 @@ std::string usernameStr;
 #define PROCESSOR_ARCHITECTURE_ARM64            12
 #define PROCESSOR_ARCHITECTURE_ARM32_ON_WIN64   13
 #define PROCESSOR_ARCHITECTURE_IA32_ON_ARM64    14
+
+#if defined(__x86_64__) || defined(_M_X64)\
+|| defined(__ppc64__) || defined(__PPC64__)
+#define x64
+#elif defined(__i386__) || defined(_M_IX86)\
+|| defined(__arm__) || defined(_M_ARM)\
+||defined(__ppc__) || defined(__PPC__)
+#define x86
+#else
+#define xxx
+#endif
 
 std::wofstream file("log.txt");
 
@@ -70,6 +82,39 @@ inline std::wstring to_wstring(std::string& str) {
 inline std::string to_string(std::wstring& wstr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wstr);
+}
+
+BOOL IsSystem64Bit()
+{
+    SYSTEM_INFO si = { 0 };
+
+    // 动态获取 GetNativeSystemInfo 函数指针（XP SP2+ 支持）
+    typedef VOID(WINAPI* LPFN_GetNativeSystemInfo)(LPSYSTEM_INFO);
+    HMODULE hModule = GetModuleHandle(L"kernel32.dll");
+    if (hModule) {
+        LPFN_GetNativeSystemInfo pGetNativeSystemInfo =
+            (LPFN_GetNativeSystemInfo)GetProcAddress(
+                hModule,
+                "GetNativeSystemInfo"
+            );
+
+        if (pGetNativeSystemInfo)
+        {
+            pGetNativeSystemInfo(&si);
+        }
+        else
+        {
+            // 不支持 GetNativeSystemInfo 的系统（XP SP1 及更早），回退到 GetSystemInfo
+            GetSystemInfo(&si);
+            // 这种情况下系统一定是 32 位的（因为 64 位系统至少是 XP SP2）
+            return FALSE;
+        }
+
+    }
+
+    // 判断处理器架构
+    return (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
+        si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64);
 }
 
 BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey)
@@ -1106,15 +1151,15 @@ Execute:
 
         // 禁用程序兼容性助手
         std::cout << "禁用程序兼容性助手...\n";
-        HKEY hKey;
-        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE, nullptr, &hKey, nullptr);
+        HKEY hKeyPCA;
+        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE, nullptr, &hKeyPCA, nullptr);
         DWORD val = 1;
-        RegSetValueExA(hKey, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
-        RegCloseKey(hKey);
+        RegSetValueExA(hKeyPCA, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
+        RegCloseKey(hKeyPCA);
         // 64位视图（如果存在）
-        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE | KEY_WOW64_64KEY, nullptr, &hKey, nullptr);
-        RegSetValueExA(hKey, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
-        RegCloseKey(hKey);
+        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE | KEY_WOW64_64KEY, nullptr, &hKeyPCA, nullptr);
+        RegSetValueExA(hKeyPCA, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
+        RegCloseKey(hKeyPCA);
 
         // 复制 wmp 目录
         std::cout << "复制新文件 (wmp)...\n";
@@ -1289,39 +1334,6 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot)
     return TRUE;
 }
 
-BOOL IsSystem64Bit()
-{
-    SYSTEM_INFO si = { 0 };
-
-    // 动态获取 GetNativeSystemInfo 函数指针（XP SP2+ 支持）
-    typedef VOID(WINAPI* LPFN_GetNativeSystemInfo)(LPSYSTEM_INFO);
-    HMODULE hModule = GetModuleHandle(L"kernel32.dll");
-    if (hModule) {
-        LPFN_GetNativeSystemInfo pGetNativeSystemInfo =
-            (LPFN_GetNativeSystemInfo)GetProcAddress(
-                hModule,
-                "GetNativeSystemInfo"
-            );
-
-        if (pGetNativeSystemInfo)
-        {
-            pGetNativeSystemInfo(&si);
-        }
-        else
-        {
-            // 不支持 GetNativeSystemInfo 的系统（XP SP1 及更早），回退到 GetSystemInfo
-            GetSystemInfo(&si);
-            // 这种情况下系统一定是 32 位的（因为 64 位系统至少是 XP SP2）
-            return FALSE;
-        }
-
-    }
-
-    // 判断处理器架构
-    return (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
-        si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64);
-}
-
 // 程序入口
 int main() {
     // 设置控制台代码页为 UTF-8 或系统默认
@@ -1336,48 +1348,58 @@ int main() {
     if (pos != std::string::npos)
         g_scriptDir = g_scriptDir.substr(0, pos);
 
-    // 设置系统版本对应的文件目录
-    SYSTEM_INFO nativeSI;
-    GetNativeSystemInfo(&nativeSI);
+#if defined (x86)
+    if (!is64Bit) {
+        std::cout << "警告：正在使用不符合系统架构的程序版本。dism 将无法正确使用，需要手动设置还原点与卸载程序。\n是否切换到正确的版本？(Y/n)\n";
+        char choice = 'y';
+        std::cin >> choice;
+        if (tolower(choice) != 'n') {
+            if (FileExists(g_scriptDir + "\\WMPConfig_x64.exe")) {
+                STARTUPINFO si = { sizeof(si) };
+                PROCESS_INFORMATION pi;
 
-    switch (nativeSI.wProcessorArchitecture) {
-    case PROCESSOR_ARCHITECTURE_AMD64:
-        is64Bit = true;
-        break;
+                std::string str = g_scriptDir + "\\WMPConfig_x64.exe";
+                std::wstring ws = to_wstring(str).c_str();
+                const wchar_t* wc = ws.c_str();
 
-    case PROCESSOR_ARCHITECTURE_INTEL:
-        is64Bit = false;
-        break;
+                // 创建新进程
+                if (CreateProcess(
+                    wc,  // 可执行文件路径
+                    NULL,                           // 命令行参数
+                    NULL,                           // 进程安全属性
+                    NULL,                           // 线程安全属性
+                    FALSE,                          // 继承句柄
+                    CREATE_NEW_CONSOLE,               // 创建独立进程
+                    NULL,                           // 环境变量
+                    NULL,                           // 当前目录
+                    &si,                            // 启动信息
+                    &pi)) {                         // 进程信息
 
-    case PROCESSOR_ARCHITECTURE_ARM:
-        is64Bit = false;
-        break;
+                    // 关闭进程和线程句柄（不等待进程结束）
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
 
-    case PROCESSOR_ARCHITECTURE_ARM64:
-        is64Bit = true;
-        break;
-
-    case PROCESSOR_ARCHITECTURE_IA64:
-        is64Bit = true;
-        break;
-
-    default:
-        printf("Unknown (0x%x)\n", nativeSI.wProcessorArchitecture);
+                    return 10;
+                }
+                
+            }
+            else {
+                std::cerr << "错误：找不到 64 位程序。请重新下载应用程序，或手动创建还原点并卸载Windows Media Player，或退出本应用程序。您的系统尚未更改。\n";
+                system("pause");
+            }
+        }
     }
-
+#endif
     if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
-    TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
+    else TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
 
+    system("whoami /all");
+    system("pause");
 
     while (true) {
         ShowMenu();
-        int choice = GetChoice();
-        if (choice == -1) {
-            std::cout << "无效输入，请重新选择。\n";
-            system("pause");
-            clrscr();
-            continue;
-        }
+        int choice = -1;
+        choice=GetChoice();
         switch (choice) {
         case 0:
             return 0;
