@@ -1,4 +1,4 @@
-﻿// WMPConfigure.cpp
+// WMPConfigure.cpp
 // 编译：Visual Studio 2015+，设置字符集为“未设置”或“多字节字符集”
 // 需要链接以下库：Advapi32.lib, Shell32.lib, Ole32.lib
 #pragma warning(disable : 4996)
@@ -40,7 +40,6 @@ std::vector<std::string> TARGET_DIR;
 std::string g_scriptDir;
 bool is64Bit = false; // 记录系统是否为64位
 std::string usernameStr;
-bool isAuto = false;
 
 // 对 CPU 架构宏定义的移植
 #define PROCESSOR_ARCHITECTURE_PPC              3
@@ -81,14 +80,6 @@ inline std::wstring to_wstring(std::string& str) {
 inline std::string to_string(std::wstring& wstr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wstr);
-}
-
-std::string tolower(const char* str) {
-    std::string res;
-    for (size_t i = 0; i < strlen(str); i++) {
-        res.push_back(tolower(str[i]));
-    }
-    return res;
 }
 
 BOOL IsSystem64Bit()
@@ -136,7 +127,7 @@ BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey)
     DWORD dwSize = 256;
     while (RegEnumKeyEx(hKey, 0, szSubKeyName, &dwSize, NULL, NULL, NULL, NULL) == ERROR_SUCCESS)
     {
-        DeleteKeyRecursively(hKey, szSubKeyName);
+        DeleteKeyRecursively(hKeyRoot, szSubKeyName);
         dwSize = 256;
     }
 
@@ -156,33 +147,6 @@ std::string GetLastErrorStr() {
     LocalFree(buf);
     return result;
 }
-
-bool SetRunOnce() {
-    HKEY hKey;
-    LONG result = RegOpenKeyExW(
-        HKEY_CURRENT_USER,
-        L"Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce",
-        0, KEY_SET_VALUE, &hKey);
-
-    if (result != ERROR_SUCCESS) {
-        std::cerr << "Failed to open RunOnce key" << std::endl;
-        return false;
-    }
-
-    std::wstring commandLine = L"\"" + to_wstring(g_scriptDir) + L"\\WMPConfig.exe" + L"\" " + L"/s";
-
-    // 设置程序在下次启动时运行一次
-    result = RegSetValueExW(
-        hKey,
-        L"MyProgram",  // 自定义名称
-        0, REG_SZ,
-        (BYTE*)commandLine.c_str(),
-        (commandLine.length() + 1) * sizeof(wchar_t));
-
-    RegCloseKey(hKey);
-    return result == ERROR_SUCCESS;
-}
-
 
 // 检查文件是否存在
 bool FileExists(const std::string& path) {
@@ -243,26 +207,6 @@ void RunAsAdmin() {
     GetModuleFileNameA(nullptr, exePath, MAX_PATH);
     ShellExecuteA(nullptr, "runas", exePath, nullptr, nullptr, SW_SHOW);
     exit(0);
-}
-
-// 修改为 ANSI 版本（使用 const char*）
-bool PinToTaskbar(const wchar_t* shortcut) {
-    int result = reinterpret_cast<int>(ShellExecute(NULL, L"taskbarpin", shortcut,
-        NULL, NULL, 0));
-    return result > 32;
-}
-
-void UnpinFromTaskbar(const std::string& lnkPath)
-{
-    // 使用 ANSI 版本的 ShellExecuteA
-    ShellExecuteA(
-        NULL,
-        "taskbarunpin",          // 动词：从任务栏解锁（ANSI 字符串）
-        lnkPath.c_str(),
-        NULL,
-        NULL,
-        SW_SHOW
-    );
 }
 
 // 启用特权
@@ -440,6 +384,163 @@ bool GetCurrentUserSid(PSID* ppSid) {
     return result == TRUE;
 }
 
+bool SetRegistryAuthority(wchar_t* path) {
+    WCHAR UserName[512] = { 0 };
+    DWORD cbUserName = sizeof(UserName) / sizeof(WCHAR);
+    PSID pSid = NULL;
+    DWORD cbSid = 0;
+    WCHAR DomainBuffer[512] = { 0 };
+    DWORD cbDomainBuffer = sizeof(DomainBuffer) / sizeof(WCHAR);
+    SID_NAME_USE eUse;
+    bool bResult = false;
+
+    // 1. 获取当前用户名 (使用宽字符版本)
+    if (!GetUserNameW(UserName, &cbUserName)) {
+        wprintf(L"获取用户名失败: %d\n", GetLastError());
+        return false;
+    }
+
+    // 2. 第一次调用获取 SID 所需缓冲区大小
+    if (!LookupAccountNameW(NULL, UserName, NULL, &cbSid,
+        DomainBuffer, &cbDomainBuffer, &eUse)) {
+        DWORD err = GetLastError();
+        if (err != ERROR_INSUFFICIENT_BUFFER) {
+            wprintf(L"获取SID大小失败: %d\n", err);
+            return false;
+        }
+    }
+
+    // 3. 分配 SID 缓冲区
+    pSid = (PSID)malloc(cbSid);
+    if (!pSid) {
+        wprintf(L"内存分配失败\n");
+        return false;
+    }
+
+    // 4. 第二次调用获取实际 SID
+    if (!LookupAccountNameW(NULL, UserName, pSid, &cbSid,
+        DomainBuffer, &cbDomainBuffer, &eUse)) {
+        wprintf(L"获取SID失败: %d\n", GetLastError());
+        goto cleanup;
+    }
+
+    {
+        // 5. 更改注册表项所有者
+        DWORD dwResult = SetNamedSecurityInfoW(
+            path,                       // 注册表路径（宽字符）
+            SE_REGISTRY_KEY,            // 对象类型
+            OWNER_SECURITY_INFORMATION, // 更改所有者
+            pSid,                       // 新所有者 SID
+            NULL, NULL, NULL);
+
+        if (dwResult == ERROR_SUCCESS) {
+            wprintf(L"成功更改注册表项所有者\n");
+            bResult = true;
+        }
+        else {
+            wprintf(L"更改注册表所有者失败: %d\n", dwResult);
+            switch (dwResult) {
+            case ERROR_ACCESS_DENIED:
+                wprintf(L"原因：拒绝访问（需要管理员权限）\n");
+                break;
+            case ERROR_FILE_NOT_FOUND:
+                wprintf(L"原因：注册表项不存在\n");
+                break;
+            case ERROR_INVALID_PARAMETER:
+                wprintf(L"原因：参数无效（请检查路径格式）\n");
+                break;
+            }
+        }
+    }
+cleanup:
+    free(pSid);
+    return bResult;
+}
+
+// 设置注册表项为只读：拒绝所有人写入，允许所有人读取
+bool SetReadOnlyRegistryKeyWithDeny(const wchar_t* path) {
+
+    PSID pEveryoneSid = NULL;
+    PACL pNewDacl = NULL;
+    bool bSuccess = false;
+
+    // 1. 获取 Everyone SID (S-1-1-0)
+    SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+    if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
+        0, 0, 0, 0, 0, 0, 0, &pEveryoneSid)) {
+        wprintf(L"分配 Everyone SID 失败: %d\n", GetLastError());
+        return false;
+    }
+
+    // 2. 定义写入权限掩码（拒绝这些权限）
+    DWORD dwDenyMask = KEY_SET_VALUE |          // 设置值
+        KEY_CREATE_SUB_KEY |     // 创建子项
+        DELETE |                 // 删除项
+        KEY_WRITE;               // 标准写入权限（包含上述两项）
+
+// 3. 定义读取权限掩码（允许这些权限）
+    DWORD dwAllowMask = KEY_READ |              // 标准读取权限
+        KEY_QUERY_VALUE |       // 查询值
+        KEY_ENUMERATE_SUB_KEYS |// 枚举子项
+        KEY_NOTIFY;             // 通知变更
+
+// 4. 构建两个 ACE：先拒绝（DENY），后允许（ALLOW）
+    EXPLICIT_ACCESS_W ea[2] = { 0 };
+
+    // 拒绝写入 ACE
+    ea[0].grfAccessPermissions = dwDenyMask;
+    ea[0].grfAccessMode = DENY_ACCESS;          // 拒绝访问
+    ea[0].grfInheritance = NO_INHERITANCE;      // 不继承到子项，除非是之后发现子项也有问题
+    ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+    ea[0].Trustee.ptstrName = (LPWSTR)pEveryoneSid;
+
+    // 允许读取 ACE
+    ea[1].grfAccessPermissions = dwAllowMask;
+    ea[1].grfAccessMode = SET_ACCESS;           // 允许访问
+    ea[1].grfInheritance = NO_INHERITANCE;
+    ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
+    ea[1].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+    ea[1].Trustee.ptstrName = (LPWSTR)pEveryoneSid;
+
+    // 5. 创建新的 DACL（替换原有 DACL，仅包含这两个 ACE）
+    DWORD dwResult = SetEntriesInAclW(2, ea, NULL, &pNewDacl);
+    if (dwResult != ERROR_SUCCESS) {
+        wprintf(L"创建 ACL 失败: %d\n", dwResult);
+        goto cleanup;
+    }
+
+    // 6. 应用新的 DACL 到注册表项
+    dwResult = SetNamedSecurityInfoW(
+        (LPWSTR)path,               // 注册表路径（格式如 L"CURRENT_USER\\Software\\MyApp"）
+        SE_REGISTRY_KEY,
+        DACL_SECURITY_INFORMATION,  // 只修改 DACL
+        NULL, NULL,                 // 不更改所有者、主组
+        pNewDacl,                   // 新 DACL
+        NULL);                      // 不更改 SACL
+
+    if (dwResult == ERROR_SUCCESS) {
+        wprintf(L"成功设置注册表项为只读（显式拒绝写入）\n");
+        bSuccess = true;
+    }
+    else {
+        wprintf(L"设置失败: %d\n", dwResult);
+        switch (dwResult) {
+        case ERROR_ACCESS_DENIED:
+            wprintf(L"原因：权限不足（需要管理员或 WRITE_DAC 权限）\n");
+            break;
+        case ERROR_FILE_NOT_FOUND:
+            wprintf(L"原因：注册表项不存在\n");
+            break;
+        }
+    }
+
+cleanup:
+    if (pNewDacl) LocalFree(pNewDacl);
+    if (pEveryoneSid) FreeSid(pEveryoneSid);
+    return bSuccess;
+}
+
 // 写入注册表项（MultiUsers 部分）
 void WriteMediaPlayerRegistry() {
     HKEY hKey = nullptr;
@@ -540,6 +641,7 @@ void ShowMenu() {
     std::cout << "[2] 检查依赖项目\n";
     std::cout << "[3] 查看已知限制\n";
     std::cout << "[4] 执行多用户部署\n";
+    std::cout << "[5] 执行故障排查程序\n";
     std::cout << "请选择一个选项: ";
 }
 
@@ -692,15 +794,10 @@ BeginInst:
     else {
         ImportRegFile(g_scriptDir + "\\SetOpeningMethod_x86.reg");
     }
+    // 快捷方式注册（询问）
+    std::cout << "重新注册快捷方式？(y/n): ";
     char ch;
-    if (!isAuto) {
-        // 快捷方式注册（询问）
-        std::cout << "重新注册快捷方式？(y/n): ";
-        std::cin >> ch;
-    }
-    else {
-        ch = 'y';
-    }
+    std::cin >> ch;
     //std::cin.ignore();
     if (ch == 'y' || ch == 'Y') {
 
@@ -768,40 +865,16 @@ BeginInst:
                 std::cerr << "找不到快捷方式文件。\n";
             }
             // 尝试固定到任务栏
-            std::string filename = "Windows Media Player.lnk";
-            if (FileExists(filename)) {
-                goto EndCopyingLink;
-            }
-
-            // 获取完整路径（ANSI 版本）
-            char fullPath[MAX_PATH];
-            (void)_fullpath(fullPath, filename.c_str(), MAX_PATH);
-
-            int len = MultiByteToWideChar(CP_ACP, 0, fullPath, -1, NULL, 0);
-            wchar_t* wideString = new wchar_t[len];
-            MultiByteToWideChar(CP_ACP, 0, fullPath, -1, wideString, len);
-            PinToTaskbar(wideString);
-            delete[] wideString;
-
-            // 直接使用 ANSI 字符串调用 PinToTaskbar
-
-
-            // 如果需要解锁，调用：
-            // UnpinFromTaskbar(std::string(fullPath));
+            // 已经弃用此功能，因为方案并不稳定
 
 
         }
     }
 EndCopyingLink:
-    // 打开方式注册
-    if (!isAuto) {
-        std::cout << "重新注册打开方式？(y/n): ";
-        std::cin >> ch;
-        std::cin.ignore();
-    }
-    else {
-        ch = 'y';
-    }
+    // 打开方式注册（再次询问，但已导入过）
+    std::cout << "重新注册打开方式？(y/n): ";
+    std::cin >> ch;
+    std::cin.ignore();
     if (ch == 'y' || ch == 'Y') {
         if (is64Bit) {
             ImportRegFile(g_scriptDir + "\\SetOpeningMethod_x64.reg");
@@ -851,6 +924,47 @@ BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
     return 0;
 }
 
+// 删除引发问题的注册表
+// 如果不删除，那么有概率出现 wmploc.dll 版本错误弹窗，此时程序将拒绝运行
+void RemoveFailedRegistryItems() {
+    HKEY hKey;
+    DWORD dwValue = 0;
+    DWORD dwType = REG_DWORD;
+    DWORD dwSize = sizeof(DWORD);
+    std::wstring path=L"Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\MediaPlayer\\Setup\\Installed Versions";
+    LONG lResult = RegOpenKeyExW(
+        HKEY_CURRENT_USER,
+        path.c_str(),
+        0,
+        KEY_READ,
+        &hKey
+    );
+    if (lResult == ERROR_SUCCESS) { // 成功时删除整个注册表树
+        BOOL result = DeleteKeyRecursively(HKEY_CURRENT_USER, path.c_str());
+        if (result == FALSE) {
+            std::cerr << "错误：无法删除 " << path.c_str() << " 。您可能已经阻止程序写入此注册表项。\n";
+            goto CleanUp;
+        }
+    }
+
+    {
+        // 设置所有者
+        // DeleteKeyRecursively 保留了根键，所以可以直接设置所有者
+        std::wstring root = L"CURRENT_USER\\";
+        std::wstring pathForOwner = root + path;
+
+        // 使用数组（确保大小足够）
+        wchar_t buffer[1024];
+        wcscpy_s(buffer, pathForOwner.c_str());
+        wchar_t* pathForOwnerPtr = buffer;
+        if (SetRegistryAuthority(pathForOwnerPtr)) {
+            // 禁止写入指定的注册表
+            SetReadOnlyRegistryKeyWithDeny(pathForOwnerPtr);
+        }
+    }
+CleanUp:
+    RegCloseKey(hKey);
+}
 
 // 部署过程（选项 1）
 void ExecuteDeployment() {
@@ -989,7 +1103,7 @@ Execute:
             typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
             RtlGetVersionPtr RtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hNtdll, "RtlGetVersion");
             if (RtlGetVersion) {
-                
+
                 RTL_OSVERSIONINFOW osvi = { sizeof(osvi) };
                 LONG result = RtlGetVersion(&osvi);  // ← 关键：调用函数填充数据
                 if (result == 0) {  // 0 表示成功
@@ -999,9 +1113,9 @@ Execute:
                         std::cout << "警告：无法证明接下来的操作不会引起任何问题。按下任意键后，若出现问题，您可能需要通过系统还原点或安装光盘进行还原。（您现在仍然可以安全退出）\n";
                         system("pause");
                         std::cout << "正在尝试更改写入权限...\n";
-                        
-                        std::string filePath = is64Bit?
-                            "C:\\Program Files (x86)\\Windows Media Player":
+
+                        std::string filePath = is64Bit ?
+                            "C:\\Program Files (x86)\\Windows Media Player" :
                             "C:\\Program Files\\Windows Media Player"; // 目标文件路径
                         std::string command =
                             "takeown /f \"" + filePath + "\" /r /d y && "  // /r 递归获取所有权，/d y 自动确认
@@ -1016,17 +1130,12 @@ Execute:
                         //ExecuteCommand("DISM /online /disable-feature /featurename:WindowsMediaCenter /NoRestart", true, false);
                         std::cout << "卸载 Windows Media Player...\n";
                         system("DISM /online /disable-feature /featurename:WindowsMediaPlayer /norestart");
-                        
-                        if (!isAuto) {
-                            std::cout << "第一阶段已完成。请尽快保存手头的工作，重新启动计算机，然后再次运行该程序。\n";
-                            std::cout << "现在就重新启动计算机吗？(y/n): ";
-                            std::cin >> ch;
-                            //std::cin.ignore();
-                        }
-                        else {
-                            ch = 'y';
-                            SetRunOnce();
-                        }
+
+
+                        std::cout << "第一阶段已完成。请尽快保存手头的工作，重新启动计算机，然后再次运行该程序。\n";
+                        std::cout << "现在就重新启动计算机吗？(y/n): ";
+                        std::cin >> ch;
+                        //std::cin.ignore();
                     }
                     // 创建标记
                     LONG result = RegCreateKeyEx(
@@ -1383,8 +1492,20 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot)
     return TRUE;
 }
 
+void Troubleshooting() {
+    std::cout << "正在检查错误的注册表项...\n";
+    // 重新给出安装完成标志
+
+    // 检查组件检查记录的注册表项是否被修改
+
+    if (1) {// todo change conditions here
+        RemoveFailedRegistryItems();
+    }
+    system("pause");
+}
+
 // 程序入口
-int main(int argc, char* argv[]) {
+int main() {
     // 设置控制台代码页为 UTF-8 或系统默认
     SetConsoleOutputCP(CP_ACP);
     SetConsoleCP(CP_ACP);
@@ -1396,20 +1517,6 @@ int main(int argc, char* argv[]) {
     size_t pos = g_scriptDir.find_last_of("\\");
     if (pos != std::string::npos)
         g_scriptDir = g_scriptDir.substr(0, pos);
-
-    for (int i = 1; i < argc; i++) {
-        std::string param = tolower(argv[i]);
-        if (param == "-s" || param == "-silent" ||
-            param == "/s" || param == "/slient"
-            ) {
-            isAuto = true;
-        }
-        else {
-            std::cerr << "参数错误：不存在参数 " << "\"" << argv[i] << "\"" << std::endl;
-            std::exit(11);
-        }
-
-    }
 
 #if defined (x86)
     if (!is64Bit) {
@@ -1444,7 +1551,7 @@ int main(int argc, char* argv[]) {
 
                     return 10;
                 }
-                
+
             }
             else {
                 std::cerr << "错误：找不到 64 位程序。请重新下载应用程序，或手动创建还原点并卸载Windows Media Player，或退出本应用程序。您的系统尚未更改。\n";
@@ -1456,52 +1563,13 @@ int main(int argc, char* argv[]) {
     if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
     else TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
 
-    //system("whoami /all");
-    //system("pause");
+    system("whoami /all");
+    system("pause");
 
     while (true) {
         ShowMenu();
         int choice = -1;
-        if (!isAuto) choice = GetChoice();
-        else {
-            HKEY hKey;
-            DWORD dwValue = 0;
-            DWORD dwType = REG_DWORD;
-            DWORD dwSize = sizeof(DWORD);
-            LONG lResult = RegOpenKeyExA(
-                HKEY_LOCAL_MACHINE,
-                "SOFTWARE\\wmpConfig",
-                0,
-                KEY_READ,
-                &hKey
-            );
-            if (lResult == ERROR_SUCCESS) {
-                // 查询 InstalledState 的值
-                lResult = RegQueryValueExA(
-                    hKey,
-                    "InstalledState",    // 值名称
-                    NULL,               // 保留参数
-                    &dwType,            // 接收数据类型
-                    (LPBYTE)&dwValue,   // 接收数据的缓冲区
-                    &dwSize             // 缓冲区大小
-                );
-
-                switch (dwValue) {
-                case 1:
-                    choice = 1;
-                    break;
-                case 2:
-                    choice = 4;
-                    break;
-                default:
-                    choice = 1;
-                    break;
-                }
-            }
-            else {
-                choice = 1;
-            }
-        }
+        choice = GetChoice();
         switch (choice) {
         case 0:
             return 0;
@@ -1523,6 +1591,9 @@ int main(int argc, char* argv[]) {
                 MultiUsersSetup();
             }
             break;
+        case 5:
+            Troubleshooting();
+            break;
         default:
             std::cout << "未知选项。\n";
 
@@ -1530,5 +1601,6 @@ int main(int argc, char* argv[]) {
         system("pause");
         clrscr();
     }
+    
     return 0;
 }
