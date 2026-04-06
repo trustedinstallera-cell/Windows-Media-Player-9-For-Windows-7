@@ -1,6 +1,3 @@
-// WMPConfigure.cpp
-// 编译：Visual Studio 2015+，设置字符集为“未设置”或“多字节字符集”
-// 需要链接以下库：Advapi32.lib, Shell32.lib, Ole32.lib
 #pragma warning(disable : 4996)
 #pragma prefast(disable: 28159)
 #define _WIN32_WINNT 0x0501
@@ -12,6 +9,7 @@
 #include <algorithm>
 #include <cctype>
 #include <codecvt>
+#include <unordered_map>
 #include <windows.h>
 #include <shellapi.h>
 #include <shlobj.h>
@@ -22,12 +20,12 @@
 #include <winternl.h>   // 用于 RtlGetVersion (兼容 XP)
 #include <shlwapi.h>
 #include <tchar.h>
-#include <strsafe.h>
 
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "Shell32.lib")
 #pragma comment(lib, "Ole32.lib")
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "Version.lib")
 
 // 常量定义
 const std::string VERSION_MARKER_FILE = "1";
@@ -66,9 +64,68 @@ std::string usernameStr;
 #define xxx
 #endif
 
-std::wofstream file("log.txt");
+std::ofstream file("log.txt", std::ofstream::out | std::ofstream::app);
 
+void WriteLog(std::string, std::string);
 BOOL ProcessDirectory(LPCWSTR lpszRoot);
+
+class Lang {
+private:
+    static std::unordered_map<std::string, std::string> language;
+
+public:
+    static std::string get(const std::string& id) {
+        if (language.count(id) == 0) {
+            std::cerr << "Error: Not found language setting with id " << id << std::endl;
+            WriteLog("Not found language id " + id, "Error");
+            return "";
+        }
+    }
+
+    static std::string get(int id) {
+        std::string str(std::to_string(id));
+        return get(str);
+    }
+
+    static void set(const std::string& filename = "lang.lng") {
+        std::ifstream lng(filename, std::ifstream::in);
+        while (!lng.is_open()) {
+            std::cerr << "Error: Language file not found. File name: " << filename << std::endl;
+            system("pause");
+            lng.clear();
+            lng.open(filename, std::ifstream::in);
+        }
+        std::string line;
+        int cnt = 0;
+        while (getline(lng,line)) {
+            cnt++;
+            if (line.empty()||line[0]==';') {
+                continue;
+            }
+            
+            auto frontPos = std::find(line.begin(), line.end(), '=');
+            if (frontPos == line.end()) {
+                std::cerr << "Error: Invalid line at line " << cnt << std::endl;
+            }
+            else {
+                auto keyStart = line.begin();
+                auto keyEnd = frontPos;
+                while (keyStart != keyEnd && std::isspace(*keyStart)) ++keyStart;
+                while (keyEnd != keyStart && std::isspace(*(keyEnd - 1))) --keyEnd;
+
+                // 去除 value 两端的空格
+                auto valStart = frontPos + 1;
+                auto valEnd = line.end();
+                while (valStart != valEnd && std::isspace(*valStart)) ++valStart;
+                while (valEnd != valStart && std::isspace(*(valEnd - 1))) --valEnd;
+
+                language[std::string(keyStart, keyEnd)] = std::string(valStart, valEnd);
+            }
+        }
+    }
+};
+Lang lang;
+
 
 inline std::wstring to_wstring(std::string& str) {
     int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
@@ -80,6 +137,15 @@ inline std::wstring to_wstring(std::string& str) {
 inline std::string to_string(std::wstring& wstr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wstr);
+}
+
+// 写入日志。插入\n以换行
+void WriteLog(std::string str,std::string level="") {
+    if (file.is_open()) {
+        SYSTEMTIME now;
+        GetSystemTime(&now);
+        file << level<<","<<now.wYear << "-" << now.wMonth << "-" << now.wDay << " " << now.wHour << ":" << now.wMinute << ":" << now.wSecond << "." << now.wMilliseconds << "," << str << std::endl;
+    }
 }
 
 BOOL IsSystem64Bit()
@@ -103,12 +169,15 @@ BOOL IsSystem64Bit()
         else
         {
             // 不支持 GetNativeSystemInfo 的系统（XP SP1 及更早），回退到 GetSystemInfo
+            WriteLog("",lang.get(2000));
             GetSystemInfo(&si);
             // 这种情况下系统一定是 32 位的（因为 64 位系统至少是 XP SP2）
             return FALSE;
         }
 
     }
+
+    WriteLog("ProcessorArchitecture is " + si.wProcessorArchitecture, "Info");
 
     // 判断处理器架构
     return (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
@@ -132,6 +201,9 @@ BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey)
     }
 
     RegCloseKey(hKey);
+    if (RegDeleteKey(hKeyRoot, lpszSubKey) == ERROR_SUCCESS) {
+//#error todo
+    }
     return RegDeleteKey(hKeyRoot, lpszSubKey) == ERROR_SUCCESS;
 }
 
@@ -145,6 +217,27 @@ std::string GetLastErrorStr() {
         (LPSTR)&buf, 0, nullptr);
     std::string result(buf ? buf : "");
     LocalFree(buf);
+    return result;
+}
+
+std::string GetLastErrorStr(LSTATUS ErrorCode) {
+    LPVOID lpMsgBuf = nullptr;
+    DWORD ret = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+        FORMAT_MESSAGE_FROM_SYSTEM |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, ErrorCode, 0,
+        (LPSTR)&lpMsgBuf, 0, NULL);
+    if (ret == 0 || lpMsgBuf == nullptr) {
+        return "";
+    }
+    std::string result(static_cast<const char*>(lpMsgBuf));
+    LocalFree(lpMsgBuf);
+
+    // 去掉末尾换行符
+    while (!result.empty() && (result.back() == '\n' || result.back() == '\r')) {
+        result.pop_back();
+    }
+
     return result;
 }
 
@@ -171,6 +264,7 @@ int ExecuteCommand(const std::string& cmd, bool wait = true, bool showWindow = f
     if (!CreateProcessA(nullptr, const_cast<LPSTR>(cmd.c_str()), nullptr, nullptr,
         FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
         std::cerr << "执行命令失败: " << cmd << " 错误: " << GetLastErrorStr() << std::endl;
+        WriteLog(lang.get(2101) + GetLastErrorStr(), lang.get(2002));
         return -1;
     }
     if (wait) {
@@ -189,11 +283,14 @@ int ExecuteCommand(const std::string& cmd, bool wait = true, bool showWindow = f
 // 检查当前进程是否以管理员身份运行
 bool IsAdmin() {
     HANDLE hToken = nullptr;
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        WriteLog(lang.get(2102), lang.get(2002));
         return false;
+    }
     TOKEN_ELEVATION elevation;
     DWORD size = sizeof(TOKEN_ELEVATION);
     if (!GetTokenInformation(hToken, TokenElevation, &elevation, size, &size)) {
+        WriteLog(lang.get(2103), lang.get(2002));
         CloseHandle(hToken);
         return false;
     }
@@ -256,6 +353,44 @@ BOOL EnableShutdownPrivilege(DWORD DesiredAccess)
 
     CloseHandle(hToken);
     return TRUE;
+}
+
+struct WindowsVersion {
+    int major = -1;
+    int minor = -1;
+    int build = -1;
+};
+WindowsVersion GetOSVersion() {
+    WindowsVersion version;
+    WCHAR sysPath[MAX_PATH];
+    if (GetSystemDirectoryW(sysPath, MAX_PATH) == 0)
+        return version;
+
+    wcscat_s(sysPath, L"\\ntoskrnl.exe");
+
+    DWORD verSize = GetFileVersionInfoSizeW(sysPath, NULL);
+    if (verSize == 0)
+        return version;
+
+    BYTE* verData = new BYTE[verSize];
+    if (!GetFileVersionInfoW(sysPath, 0, verSize, verData)) {
+        delete[] verData;
+        return version;
+    }
+
+    VS_FIXEDFILEINFO* pFileInfo = NULL;
+    UINT len = 0;
+    if (!VerQueryValueW(verData, L"\\", (VOID**)&pFileInfo, &len)) {
+        delete[] verData;
+        return version;
+    }
+
+    version.major = HIWORD(pFileInfo->dwFileVersionMS);
+    version.minor = LOWORD(pFileInfo->dwFileVersionMS);
+    version.build = HIWORD(pFileInfo->dwFileVersionLS);
+
+    delete[] verData;
+    return version;
 }
 
 // 获取磁盘剩余空间（字节）
@@ -396,7 +531,7 @@ bool SetRegistryAuthority(wchar_t* path) {
 
     // 1. 获取当前用户名 (使用宽字符版本)
     if (!GetUserNameW(UserName, &cbUserName)) {
-        wprintf(L"获取用户名失败: %d\n", GetLastError());
+        std::cout<<"获取用户名失败: "<< GetLastError()<<"\n";
         return false;
     }
 
@@ -405,7 +540,7 @@ bool SetRegistryAuthority(wchar_t* path) {
         DomainBuffer, &cbDomainBuffer, &eUse)) {
         DWORD err = GetLastError();
         if (err != ERROR_INSUFFICIENT_BUFFER) {
-            wprintf(L"获取SID大小失败: %d\n", err);
+            std::cout << "获取SID大小失败: " << err << "\n";
             return false;
         }
     }
@@ -413,14 +548,14 @@ bool SetRegistryAuthority(wchar_t* path) {
     // 3. 分配 SID 缓冲区
     pSid = (PSID)malloc(cbSid);
     if (!pSid) {
-        wprintf(L"内存分配失败\n");
+        std::cout<<"内存分配失败\n";
         return false;
     }
 
     // 4. 第二次调用获取实际 SID
     if (!LookupAccountNameW(NULL, UserName, pSid, &cbSid,
         DomainBuffer, &cbDomainBuffer, &eUse)) {
-        wprintf(L"获取SID失败: %d\n", GetLastError());
+        std::cout << "获取 SID 失败: " << GetLastError() << "\n";
         goto cleanup;
     }
 
@@ -434,20 +569,20 @@ bool SetRegistryAuthority(wchar_t* path) {
             NULL, NULL, NULL);
 
         if (dwResult == ERROR_SUCCESS) {
-            wprintf(L"成功更改注册表项所有者\n");
+            std::cout << "成功更改注册表项所有者\n";
             bResult = true;
         }
         else {
-            wprintf(L"更改注册表所有者失败: %d\n", dwResult);
+            std::cout << "更改注册表所有者失败: " << dwResult << "\n";
             switch (dwResult) {
             case ERROR_ACCESS_DENIED:
-                wprintf(L"原因：拒绝访问（需要管理员权限）\n");
+                std::cout << "原因：拒绝访问（需要管理员权限）\n";
                 break;
             case ERROR_FILE_NOT_FOUND:
-                wprintf(L"原因：注册表项不存在\n");
+                std::cout << "原因：注册表项不存在\n";
                 break;
             case ERROR_INVALID_PARAMETER:
-                wprintf(L"原因：参数无效（请检查路径格式）\n");
+                std::cout << "原因：参数无效（请检查路径格式）\n";
                 break;
             }
         }
@@ -468,7 +603,7 @@ bool SetReadOnlyRegistryKeyWithDeny(const wchar_t* path) {
     SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
     if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
         0, 0, 0, 0, 0, 0, 0, &pEveryoneSid)) {
-        wprintf(L"分配 Everyone SID 失败: %d\n", GetLastError());
+        std::cout << "分配 Everyone SID 失败: " << GetLastError() << "\n";
         return false;
     }
 
@@ -506,7 +641,7 @@ bool SetReadOnlyRegistryKeyWithDeny(const wchar_t* path) {
     // 5. 创建新的 DACL（替换原有 DACL，仅包含这两个 ACE）
     DWORD dwResult = SetEntriesInAclW(2, ea, NULL, &pNewDacl);
     if (dwResult != ERROR_SUCCESS) {
-        wprintf(L"创建 ACL 失败: %d\n", dwResult);
+        std::cout << "创建 ACL 失败: " << dwResult << "\n";
         goto cleanup;
     }
 
@@ -520,17 +655,17 @@ bool SetReadOnlyRegistryKeyWithDeny(const wchar_t* path) {
         NULL);                      // 不更改 SACL
 
     if (dwResult == ERROR_SUCCESS) {
-        wprintf(L"成功设置注册表项为只读（显式拒绝写入）\n");
+        std::cout << "成功设置注册表项为只读（显式拒绝写入）\n";
         bSuccess = true;
     }
     else {
-        wprintf(L"设置失败: %d\n", dwResult);
+        std::cout << "设置失败: " << dwResult << "\n";
         switch (dwResult) {
         case ERROR_ACCESS_DENIED:
-            wprintf(L"原因：权限不足（需要管理员或 WRITE_DAC 权限）\n");
+            std::cout << "原因：权限不足（需要管理员或 WRITE_DAC 权限）\n";
             break;
         case ERROR_FILE_NOT_FOUND:
-            wprintf(L"原因：注册表项不存在\n");
+            std::cout << "原因：注册表项不存在\n";
             break;
         }
     }
@@ -641,7 +776,7 @@ void ShowMenu() {
     std::cout << "[2] 检查依赖项目\n";
     std::cout << "[3] 查看已知限制\n";
     std::cout << "[4] 执行多用户部署\n";
-    std::cout << "[5] 执行故障排查程序\n";
+    //std::cout << "[5] 执行故障排查程序\n";
     std::cout << "请选择一个选项: ";
 }
 
@@ -651,8 +786,8 @@ int GetChoice() {
     std::getline(std::cin, line);
     if (line.empty()) return -1;
     char ch = line[0];
-    if (ch >= '0' && ch <= '4') return ch - '0';
-    return -1;
+    return ch - '0';
+    //return -1;
 }
 
 // 选项 3：已知限制
@@ -760,7 +895,6 @@ void MultiUsersSetup() {
                 exit(8);
             }
         }
-
     }
     else {
         std::cout << "警告：可能没有完成安装任务，或注册表项被破坏。\n";
@@ -885,6 +1019,27 @@ EndCopyingLink:
         std::cout << "所有文件关联配置完成。\n";
     }
 
+    {
+        std::cout << "正在检查错误的注册表项...\n";
+        std::string path = "Software\\Classes\\VirtualStore\\MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\MediaPlayer\\Setup\\Installed Versions";
+        // 检查是否可以修改指定的路径
+        HKEY hKey;
+        DWORD dwValue = 0;
+        DWORD dwType = REG_DWORD;
+        DWORD dwSize = sizeof(DWORD);
+        LONG lResult = RegOpenKeyExA(
+            HKEY_CURRENT_USER,
+            path.c_str(),
+            0,
+            KEY_WRITE,
+            &hKey
+        );
+        if (lResult == ERROR_SUCCESS) {
+            void RemoveFailedRegistryItems();
+            RemoveFailedRegistryItems();
+        }
+    }
+
     std::cout << "多用户部署完成。\n";
     system("pause");
     exit(0);
@@ -927,7 +1082,7 @@ BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
 // 删除引发问题的注册表
 // 如果不删除，那么有概率出现 wmploc.dll 版本错误弹窗，此时程序将拒绝运行
 void RemoveFailedRegistryItems() {
-    HKEY hKey;
+    HKEY hKey = NULL;
     DWORD dwValue = 0;
     DWORD dwType = REG_DWORD;
     DWORD dwSize = sizeof(DWORD);
@@ -1026,10 +1181,12 @@ JudgeForStage:
             case 2:
                 std::cout << "注意：正在进行第二阶段覆盖执行阶段。";
                 stage = 2;
+                WriteLog("Performing second stage of execution.", "Info");
                 system("pause");
                 break;
             default:
                 std::cout << "警告：可能没有完成上一阶段，或注册表项被破坏。\n";
+                WriteLog("Last stage failed or registry corrupted", "Warning");
                 std::cout << "是否继续安装过程？(y/N)";
                 char choice;
                 std::cin >> choice;
@@ -1064,6 +1221,7 @@ Execute:
     std::cout << "程序将结束 Windows Media Player 与 Windows Media Center。请确保它们已经停止运行。\n";
     system("pause");
     if (EnumWindows(CloseWindows, 0)) {
+        WriteLog("Failed to terminate application.", "Error");
         std::cerr << "错误：无法结束进程，请手动执行，然后按任意键。\n";
         std::cout << "注意：若没有结束进程，那么写入文件将失败，程序将无法继续执行。\n";
     }
@@ -1080,7 +1238,13 @@ Execute:
         if (ch == 'y' || ch == 'Y') {
             // 启用系统还原（使用 wmic，因为 API 较复杂）
             std::cout << "正在启用系统还原...\n";
-            ExecuteCommand("wmic /namespace:\\\\root\\default path SystemRestore call Enable \"C:\"", true, false);
+            WriteLog("Enabling system restore.", "Info");
+            int returnValue = ExecuteCommand("wmic /namespace:\\\\root\\default path SystemRestore call Enable \"C:\"", true, false);
+            if (returnValue != 0) {
+                std::cout << "错误：无法启用系统还原。" << std::endl;
+                WriteLog("Cannot enable system restore.", "Error");
+            }
+
             // 创建还原点
             std::cout << "正在创建还原点...\n";
             int ret = ExecuteCommand("wmic.exe /Namespace:\\\\root\\default Path SystemRestore Call CreateRestorePoint \"降级至 Windows Media Player 9\", 100, 7", true, false);
@@ -1089,13 +1253,19 @@ Execute:
                 std::cout << "跳过还原点配置？(y/n): ";
                 std::cin >> ch;
                 std::cin.ignore();
-                if (ch != 'y' && ch != 'Y')
-                    return;
+                if (tolower(ch)=='y') {
+                    std::cout << "已经跳过系统还原点\n";
+                    goto EndSettingRestorePoint;
+                }
             }
             else if (ret == 102) {
                 std::cout << "Warning: 磁盘空间可能不足。\n";
             }
+            else {
+//#error todo
+            }
         }
+        EndSettingRestorePoint:
 
         ch = 'c';
         HMODULE hNtdll = GetModuleHandleA("ntdll.dll");
@@ -1492,18 +1662,6 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot)
     return TRUE;
 }
 
-void Troubleshooting() {
-    std::cout << "正在检查错误的注册表项...\n";
-    // 重新给出安装完成标志
-
-    // 检查组件检查记录的注册表项是否被修改
-
-    if (1) {// todo change conditions here
-        RemoveFailedRegistryItems();
-    }
-    system("pause");
-}
-
 // 程序入口
 int main() {
     // 设置控制台代码页为 UTF-8 或系统默认
@@ -1521,6 +1679,7 @@ int main() {
 #if defined (x86)
     if (!is64Bit) {
         std::cout << "警告：正在使用不符合系统架构的程序版本。dism 将无法正确使用，需要手动设置还原点与卸载程序。\n是否切换到正确的版本？(Y/n)\n";
+        WriteLog("System architecture not capable.", "Warning");
         char choice = 'y';
         std::cin >> choice;
         if (tolower(choice) != 'n') {
@@ -1548,7 +1707,7 @@ int main() {
                     // 关闭进程和线程句柄（不等待进程结束）
                     CloseHandle(pi.hThread);
                     CloseHandle(pi.hProcess);
-
+                    WriteLog("Switched to x64 version.", "Info");
                     return 10;
                 }
 
@@ -1563,8 +1722,10 @@ int main() {
     if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
     else TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
 
-    system("whoami /all");
-    system("pause");
+    //system("whoami /all");
+    //system("pause");
+
+
 
     while (true) {
         ShowMenu();
@@ -1585,14 +1746,12 @@ int main() {
         case 4:
             if (!IsAdmin()) {
                 std::cout << "多用户部署需要管理员权限，正在请求提升...\n";
+                WriteLog("Required for administrator previlege", "Info");
                 RunAsAdmin();
             }
             else {
                 MultiUsersSetup();
             }
-            break;
-        case 5:
-            Troubleshooting();
             break;
         default:
             std::cout << "未知选项。\n";
