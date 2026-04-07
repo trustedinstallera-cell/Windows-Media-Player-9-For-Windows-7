@@ -69,7 +69,8 @@
     **已经测试的系统：**
     Windows 7 SP1 x64、Windows Vista SP2 x64（不建议尝试）、Windows 8.1 x64
     Windows 10 version 1511 x86、Windows 10 version 1909 x64、Windows 11 25H2
-    **杂项**
+    
+**杂项：**
     不建议在 Windows XP Professional 中为运行该程序而安装 One-Core-API，虽然只有 dism 命令无法运行，但此举无任何正面效果，仅可作为测试用途，且作者不对该行为负责。
 
 ## 对封面图片的限制
