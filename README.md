@@ -27,16 +27,19 @@
 
 本工具用于怀旧需要，快速将 Windows Media Player 12降级为Windows Media Player 9 Series。
 
+
 ## 💡 用法
 
-1. 双击运行本程序。
-2. 按 1 键开始配置，请点击“是”。再次按下 1 键。程序将正式开始配置，看到重启提示后，请重新启动计算机。
-3. 重启后再次运行程序，按 1 键完成部署。
+1. 选择适用于您需要的版本 [Windows Media Player 9](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/releases/download/v1.3/WMP9_Config.zip) 或 [Windows Media Player 10](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/releases/download/v1.3/WMP10_Config.zip)并下载压缩包。**注意：程序不会判断使用的 WMP 版本并给出提示。**
+2. 双击运行适用于您的系统架构的 WMP_Config.exe。如果不确定，可以随意选择一个版本，操作系统或程序将引导您选择正确的版本。
+3. 按 1 键并回车开始配置，如果弹出 UAC 窗口，请点击“是”。再次按下 1 键并回车。程序将正式开始配置，看到重启提示后，请重新启动计算机。
+4. 重启后再次运行程序，按 1 键完成部署。您还可以选择是否重新注册打开方式与还原部分快捷方式。
+5. （可选）运行C:\Program Files\Windows Media Player\wmplayer.exe（x86系统）或 C:\Program Files (x86)\Windows Media Player\wmplayer.exe（x64版本）。
 
 > [!Tip]
 > 请注意事先保存您的工作，脚本要求计算机重新启动。
 
-> [!TIP]
+> [!Tip]
 > 如果遇到任何不确定的选项，直接按Y即可
 
 ## **原理说明**
@@ -72,6 +75,7 @@
     
 **杂项：**
     不建议在 Windows XP Professional 中为运行该程序而安装 One-Core-API，虽然只有 dism 命令无法运行，但此举无任何正面效果，仅可作为测试用途，且作者不对该行为负责。
+    Windows Media Player 10同样可用，且从 v1.3 开始同步二进制文件。当前发行版在 Windows 7 SP1 中正常运行。
 
 ## 对封面图片的限制
 
