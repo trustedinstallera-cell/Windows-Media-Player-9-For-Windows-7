@@ -1,0 +1,12 @@
+;Context
+1000=
+
+;Log
+2000=Info
+2001=Warning
+2002=Error
+
+2100=Could not use GetNativeSystemInfo. Assuming system is x86 architecture.
+2101=Failed to execute command. Error code: 
+2102=Cannot invoke OpenProcessToken.
+2103=Cannot invoke GetTokenInformation.
