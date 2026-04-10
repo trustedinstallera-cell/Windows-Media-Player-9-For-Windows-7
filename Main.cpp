@@ -24,6 +24,7 @@
 #include <tchar.h>
 #include <strsafe.h>
 
+
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "Shell32.lib")
 #pragma comment(lib, "Ole32.lib")
@@ -72,8 +73,7 @@ inline std::string to_string(std::wstring& wstr) {
     return converter.to_bytes(wstr);
 }
 
-BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey)
-{
+BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey) {
     HKEY hKey;
     LONG lResult = RegOpenKeyEx(hKeyRoot, lpszSubKey, 0, KEY_READ | KEY_WRITE, &hKey);
     if (lResult != ERROR_SUCCESS)
@@ -82,8 +82,7 @@ BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey)
     // 枚举并删除所有子项
     TCHAR szSubKeyName[256];
     DWORD dwSize = 256;
-    while (RegEnumKeyEx(hKey, 0, szSubKeyName, &dwSize, NULL, NULL, NULL, NULL) == ERROR_SUCCESS)
-    {
+    while (RegEnumKeyEx(hKey, 0, szSubKeyName, &dwSize, NULL, NULL, NULL, NULL) == ERROR_SUCCESS) {
         DeleteKeyRecursively(hKey, szSubKeyName);
         dwSize = 256;
     }
@@ -173,8 +172,7 @@ bool PinToTaskbar(const wchar_t* shortcut) {
     return result > 32;
 }
 
-void UnpinFromTaskbar(const std::string& lnkPath)
-{
+void UnpinFromTaskbar(const std::string& lnkPath) {
     // 使用 ANSI 版本的 ShellExecuteA
     ShellExecuteA(
         NULL,
@@ -187,8 +185,7 @@ void UnpinFromTaskbar(const std::string& lnkPath)
 }
 
 // 启用特权
-BOOL EnableShutdownPrivilege(DWORD DesiredAccess)
-{
+BOOL EnableShutdownPrivilege(DWORD DesiredAccess) {
     HANDLE hToken;
     TOKEN_PRIVILEGES tp;
     LUID luid;
@@ -196,15 +193,13 @@ BOOL EnableShutdownPrivilege(DWORD DesiredAccess)
     // 1. 打开当前进程的访问令牌
     if (!OpenProcessToken(GetCurrentProcess(),
         DesiredAccess,
-        &hToken))
-    {
+        &hToken)) {
         printf("OpenProcessToken 失败，错误码: %lu\n", GetLastError());
         return FALSE;
     }
 
     // 2. 获取关机特权的 LUID
-    if (!LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &luid))
-    {
+    if (!LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &luid)) {
         printf("LookupPrivilegeValue 失败，错误码: %lu\n", GetLastError());
         CloseHandle(hToken);
         return FALSE;
@@ -216,16 +211,14 @@ BOOL EnableShutdownPrivilege(DWORD DesiredAccess)
     tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;  // 启用特权
 
     // 4. 调整令牌特权
-    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL))
-    {
+    if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL)) {
         printf("AdjustTokenPrivileges 失败，错误码: %lu\n", GetLastError());
         CloseHandle(hToken);
         return FALSE;
     }
 
     // 5. 检查是否成功启用了特权
-    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED)
-    {
+    if (GetLastError() == ERROR_NOT_ALL_ASSIGNED) {
         printf("警告：未获得所有特权，可能权限不足\n");
         CloseHandle(hToken);
         return FALSE;
@@ -454,6 +447,15 @@ void ImportRegFile(const std::string& regFile) {
     }
 }
 
+void EnumDrives() {
+    TCHAR buffer[256]; // 盘符数目不大于26，"X:\"占用3字节，空格为1字节，以双零结尾，共计105字节，远小于256字节
+    DWORD length = GetLogicalDriveStrings(sizeof(buffer) / sizeof(TCHAR), buffer);
+    if (length == 0) {
+        // Start from here
+        return;
+    }
+}
+
 // 显示菜单
 void ShowMenu() {
     std::cout << "\n[0] 退出程序\n";
@@ -560,7 +562,7 @@ void MultiUsersSetup() {
                 switch (tolower(choice)) {
                 case 'y':
                     goto BeginInst;
-                default: 
+                default:
                     exit(7);
                 }
                 break;
@@ -700,7 +702,7 @@ BeginInst:
             delete[] wideString;
 
             // 直接使用 ANSI 字符串调用 PinToTaskbar
-            
+
 
             // 如果需要解锁，调用：
             // UnpinFromTaskbar(std::string(fullPath));
@@ -732,8 +734,7 @@ BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
     (void)lParam;
     (void)hwnd;
     HANDLE hSnapshort = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    if (hSnapshort == INVALID_HANDLE_VALUE)
-    {
+    if (hSnapshort == INVALID_HANDLE_VALUE) {
         printf("CreateToolhelp32Snapshot调用失败！\n");
         return -1;
     }
@@ -741,12 +742,10 @@ BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
     PROCESSENTRY32 stcProcessInfo;
     stcProcessInfo.dwSize = sizeof(stcProcessInfo);
     BOOL  bRet = Process32First(hSnapshort, &stcProcessInfo);
-    while (bRet)
-    {
+    while (bRet) {
         for (auto& str : std::vector<std::wstring>{ L"wmplayer.exe",L"wm_setup.exe",L"ehshell.exe" }) {
             std::wstring currentProcess(stcProcessInfo.szExeFile);
-            if (currentProcess == str)
-            {
+            if (currentProcess == str) {
                 HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, stcProcessInfo.th32ProcessID);	//获取进程句柄
                 TerminateProcess(hProcess, 0);    //结束进程
                 int lastError = GetLastError();
@@ -900,7 +899,7 @@ Execute:
             typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
             RtlGetVersionPtr RtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hNtdll, "RtlGetVersion");
             if (RtlGetVersion) {
-                
+
                 RTL_OSVERSIONINFOW osvi = { sizeof(osvi) };
                 LONG result = RtlGetVersion(&osvi);  // ← 关键：调用函数填充数据
                 if (result == 0) {  // 0 表示成功
@@ -910,9 +909,9 @@ Execute:
                         std::cout << "警告：无法证明接下来的操作不会引起任何问题。按下任意键后，若出现问题，您可能需要通过系统还原点或安装光盘进行还原。（您现在仍然可以安全退出）\n";
                         system("pause");
                         std::cout << "正在尝试更改写入权限...\n";
-                        
-                        std::string filePath = is64Bit?
-                            "C:\\Program Files (x86)\\Windows Media Player":
+
+                        std::string filePath = is64Bit ?
+                            "C:\\Program Files (x86)\\Windows Media Player" :
                             "C:\\Program Files\\Windows Media Player"; // 目标文件路径
                         std::string command =
                             "takeown /f \"" + filePath + "\" /r /d y && "  // /r 递归获取所有权，/d y 自动确认
@@ -927,7 +926,7 @@ Execute:
                         //ExecuteCommand("DISM /online /disable-feature /featurename:WindowsMediaCenter /NoRestart", true, false);
                         std::cout << "卸载 Windows Media Player...\n";
                         system("DISM /online /disable-feature /featurename:WindowsMediaPlayer /norestart");
-                        
+
 
                         std::cout << "第一阶段已完成。请尽快保存手头的工作，重新启动计算机，然后再次运行该程序。\n";
                         std::cout << "现在就重新启动计算机吗？(y/n): ";
@@ -1205,15 +1204,13 @@ void clrscr() {    //清空屏幕
     SetConsoleCursorPosition(hdout, pos);    //光标定位到窗口左上角
 }
 
-BOOL SetOwner(LPCWSTR lpszPath)
-{
+BOOL SetOwner(LPCWSTR lpszPath) {
 
     std::string sid = GetCurrentUserSid();
     if (sid.empty()) return FALSE;
 
     PSID pOwnerSid = NULL;
-    if (!ConvertStringSidToSidA(sid.c_str(), &pOwnerSid))
-    {
+    if (!ConvertStringSidToSidA(sid.c_str(), &pOwnerSid)) {
         // 转换失败，处理错误
         return FALSE;
     }
@@ -1231,14 +1228,12 @@ BOOL SetOwner(LPCWSTR lpszPath)
     return dwResult == ERROR_SUCCESS;
 }
 
-BOOL ProcessDirectory(LPCWSTR lpszRoot)
-{
+BOOL ProcessDirectory(LPCWSTR lpszRoot) {
     std::string sid = GetCurrentUserSid();
     if (sid.empty()) return FALSE;
 
     PSID pOwnerSid = NULL;
-    if (!ConvertStringSidToSidA(sid.c_str(), &pOwnerSid))
-    {
+    if (!ConvertStringSidToSidA(sid.c_str(), &pOwnerSid)) {
         // 转换失败，处理错误
         return FALSE;
     }
@@ -1256,8 +1251,7 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot)
     if (hFind == INVALID_HANDLE_VALUE)
         return TRUE; // 空目录，不算失败
 
-    do
-    {
+    do {
         if (wcscmp(fd.cFileName, L".") == 0 || wcscmp(fd.cFileName, L"..") == 0)
             continue;
 
@@ -1265,20 +1259,16 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot)
         wcscpy_s(szFullPath, lpszRoot);
         PathAppendW(szFullPath, fd.cFileName);
 
-        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-        {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             // 递归子目录
-            if (!ProcessDirectory(szFullPath))
-            {
+            if (!ProcessDirectory(szFullPath)) {
                 FindClose(hFind);
                 return FALSE;
             }
         }
-        else
-        {
+        else {
             // 处理文件
-            if (!SetOwner(szFullPath))
-            {
+            if (!SetOwner(szFullPath)) {
                 FindClose(hFind);
                 return FALSE;
             }
@@ -1289,8 +1279,7 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot)
     return TRUE;
 }
 
-BOOL IsSystem64Bit()
-{
+BOOL IsSystem64Bit() {
     SYSTEM_INFO si = { 0 };
 
     // 动态获取 GetNativeSystemInfo 函数指针（XP SP2+ 支持）
@@ -1303,12 +1292,10 @@ BOOL IsSystem64Bit()
                 "GetNativeSystemInfo"
             );
 
-        if (pGetNativeSystemInfo)
-        {
+        if (pGetNativeSystemInfo) {
             pGetNativeSystemInfo(&si);
         }
-        else
-        {
+        else {
             // 不支持 GetNativeSystemInfo 的系统（XP SP1 及更早），回退到 GetSystemInfo
             GetSystemInfo(&si);
             // 这种情况下系统一定是 32 位的（因为 64 位系统至少是 XP SP2）
@@ -1368,6 +1355,15 @@ int main() {
     if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
     TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
 
+        // 检查系统盘符
+    char* sysDrive = getenv("SystemDrive");
+    if (sysDrive == NULL) {
+        std::cout << "警告：无法检查系统盘符。请确认系统盘为 C:，然后按任意键继续。\n";
+        system("pause");
+    }
+    else {
+
+    }
 
     while (true) {
         ShowMenu();
