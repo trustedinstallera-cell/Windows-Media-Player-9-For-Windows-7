@@ -4,6 +4,12 @@
 #pragma warning(disable : 4996)
 #pragma prefast(disable: 28159)
 #define _WIN32_WINNT 0x0501
+#define WIN32_LEAN_AND_MEAN   // 剔除不常用的 Windows 头文件
+#define NOGDI                 // 不需要 GDI
+#define NOSERVICE             // 不需要服务
+#define NOMCX                 // 不需要 Modem
+#define NOIME                 // 不需要输入法
+#define NOMINMAX
 #include <iostream>
 #include <string>
 #include <vector>
@@ -23,11 +29,23 @@
 #include <shlwapi.h>
 #include <tchar.h>
 #include <strsafe.h>
+#include <atlconv.h>
 
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "Shell32.lib")
 #pragma comment(lib, "Ole32.lib")
 #pragma comment(lib, "shlwapi.lib")
+
+#if defined(__x86_64__) || defined(_M_X64)\
+|| defined(__ppc64__) || defined(__PPC64__)
+#define x64
+#elif defined(__i386__) || defined(_M_IX86)\
+|| defined(__arm__) || defined(_M_ARM)\
+||defined(__ppc__) || defined(__PPC__)
+#define x86
+#else
+#define xxx
+#endif
 
 // 常量定义
 const std::string VERSION_MARKER_FILE = "1";
@@ -36,11 +54,10 @@ const std::string WMP_DIR = "wmp";
 
 std::vector<std::string> TARGET_DIR;
 
-// 全局变量
+// 全局变量（用于保存当前脚本所在目录）
 std::string g_scriptDir;
 bool is64Bit = false; // 记录系统是否为64位
 std::string usernameStr;
-bool isAuto = false;
 
 // 对 CPU 架构宏定义的移植
 #define PROCESSOR_ARCHITECTURE_PPC              3
@@ -56,31 +73,44 @@ bool isAuto = false;
 #define PROCESSOR_ARCHITECTURE_ARM32_ON_WIN64   13
 #define PROCESSOR_ARCHITECTURE_IA32_ON_ARM64    14
 
-#if defined(__x86_64__) || defined(_M_X64)\
-|| defined(__ppc64__) || defined(__PPC64__)
-#define x64
-#elif defined(__i386__) || defined(_M_IX86)\
-|| defined(__arm__) || defined(_M_ARM)\
-||defined(__ppc__) || defined(__PPC__)
-#define x86
-#else
-#define xxx
-#endif
-
-std::ofstream file("log.txt", std::ofstream::out | std::ofstream::app);
+std::ofstream file("log.txt", std::ofstream::app);
 
 BOOL ProcessDirectory(LPCWSTR lpszRoot);
 
-inline std::wstring to_wstring(std::string& str) {
+std::wstring to_wstring(std::string& str) {
     int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
     std::wstring wideStr(wideLen, L'\0');
     MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, &wideStr[0], wideLen);
     return wideStr;
 }
 
-inline std::string to_string(std::wstring& wstr) {
+std::string to_string(std::wstring& wstr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wstr);
+}
+
+std::wstring TCHARToWString(const TCHAR* tcharStr) {
+#ifdef _UNICODE
+    // Unicode 模式：直接转换
+    return std::wstring(tcharStr ? tcharStr : L"");
+#else
+    // ANSI 模式：char 转 wchar_t
+    if (!tcharStr) return L"";
+
+    int len = MultiByteToWideChar(CP_ACP, 0, tcharStr, -1, NULL, 0);
+    if (len <= 0) return L"";
+
+    std::wstring wstr(len - 1, L'\0');
+    MultiByteToWideChar(CP_ACP, 0, tcharStr, -1, &wstr[0], len);
+    return wstr;
+#endif
+}
+
+void pause() {
+    // 清空缓冲区以避免输入多余的按键
+    HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+    FlushConsoleInputBuffer(hStdin);
+    system("pause");
 }
 
 // 写入日志。插入\n以换行
@@ -90,40 +120,6 @@ void WriteLog(std::string str, std::string level = "") {
         GetSystemTime(&now);
         file << level << "," << now.wYear << "-" << now.wMonth << "-" << now.wDay << " " << now.wHour << ":" << now.wMinute << ":" << now.wSecond << "." << now.wMilliseconds << "," << str << std::endl;
     }
-}
-
-BOOL IsSystem64Bit() {
-    SYSTEM_INFO si = { 0 };
-
-    // 动态获取 GetNativeSystemInfo 函数指针（XP SP2+ 支持）
-    typedef VOID(WINAPI* LPFN_GetNativeSystemInfo)(LPSYSTEM_INFO);
-    HMODULE hModule = GetModuleHandle(L"kernel32.dll");
-    if (hModule) {
-        LPFN_GetNativeSystemInfo pGetNativeSystemInfo =
-            (LPFN_GetNativeSystemInfo)GetProcAddress(
-                hModule,
-                "GetNativeSystemInfo"
-            );
-
-        if (pGetNativeSystemInfo) {
-            pGetNativeSystemInfo(&si);
-        }
-        else {
-            // 不支持 GetNativeSystemInfo 的系统（XP SP1 及更早），回退到 GetSystemInfo
-            GetSystemInfo(&si);
-            // 这种情况下系统一定是 32 位的（因为 64 位系统至少是 XP SP2）
-            WriteLog("Could not use GetNativeSystemInfo. Assuming system is x86 architecture.", "Warning");
-            return FALSE;
-        }
-
-    }
-
-    // 判断处理器架构
-
-    WriteLog("Detected processor architecture is " + si.wProcessorArchitecture, "Info");
-
-    return (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
-        si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64);
 }
 
 BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey) {
@@ -235,6 +231,25 @@ void UnpinFromTaskbar(const std::string& lnkPath) {
         NULL,
         SW_SHOW
     );
+}
+
+// 判断 WMP 是否已安装（COM 方式）
+bool IsWMPInstalled() {
+    if (CoInitialize(NULL) == S_OK) {
+        CLSID clsid;
+        HRESULT hr = CLSIDFromProgID(L"WMPlayer.OCX", &clsid);
+        if (SUCCEEDED(hr)) {
+            IUnknown* pUnk = NULL;
+            hr = CoCreateInstance(clsid, NULL, CLSCTX_ALL, IID_IUnknown, (void**)&pUnk);
+            if (SUCCEEDED(hr)) {
+                pUnk->Release();
+                CoUninitialize();
+                return true;
+            }
+        }
+        CoUninitialize();
+    }
+    return false;
 }
 
 // 启用特权
@@ -491,34 +506,58 @@ void WriteMediaPlayerRegistry() {
 // 导入 .reg 文件（简单实现：直接调用 reg.exe import）
 void ImportRegFile(const std::string& regFile) {
     if (FileExists(regFile)) {
-        // 检查文件编码有效性
-        std::ifstream inRegFile(regFile,std::ifstream::binary);
-        if (inRegFile.is_open()) {
-            const unsigned char utf16_le[] = { 0xFF,0xFE };
-            unsigned char fileHead[2];
-            if (inRegFile.read(reinterpret_cast<char*>(fileHead), 2)) {
-                if (fileHead[0] == utf16_le[0] && fileHead[1] == utf16_le[1]) {
-
-                }
-                else {
-                    std::cout << "警告：注册表文件编码可能不是 UTF16-LE。请检查文件编码，否则reg 命令可能会报告文件无效。\n";
-                    system("pause");
-                }
-            }
-            else {
-                std::cout << "警告：文件大小可能太小\n";
-            }
-        }
-        else {
-            std::cout << "警告：文件可能不可读\n";
-        }
-
         std::string cmd = "reg import \"" + regFile + "\"";
         ExecuteCommand(cmd, true, false);
         std::cout << "注册表文件导入完成。" << std::endl;
     }
     else {
         std::cerr << "警告: 找不到注册表文件 " << regFile << std::endl;
+    }
+}
+
+// 获取当前系统盘符（带反斜杠，如 "C:\\"）
+bool IsSystemDrive(const std::wstring& drive) {
+    TCHAR systemDrive[MAX_PATH];
+
+    if (GetEnvironmentVariable(L"SystemDrive", systemDrive, MAX_PATH) == 0) {
+        return false;
+    }
+
+    // 确保格式统一
+    std::wstring systemRoot = systemDrive;
+    if (systemRoot.back() != L'\\') {
+        systemRoot += L'\\';
+    }
+
+    std::wstring inputRoot = drive;
+    if (inputRoot.back() != L'\\') {
+        inputRoot += L'\\';
+    }
+
+    return _wcsicmp(systemRoot.c_str(), inputRoot.c_str()) == 0;
+}
+
+void EnumDrives() {
+    TCHAR buffer[256] = { 0 }; // 盘符数目不大于26，"X:\"占用3字节，空格为1字节，以双零结尾，共计105字节，远小于256字节
+    DWORD length = GetLogicalDriveStrings(sizeof(buffer) / sizeof(TCHAR), buffer);
+    if (length == 0) {
+        std::cout << "警告：无法确认系统盘是否为 C 盘。程序要求配置路径为 C 盘。\n";
+        return;
+    }
+
+    for (TCHAR* drive = buffer; *drive; drive += lstrlen(drive) + 1LL) {
+        if (wcscmp(L"C:\\", drive) == 0) {
+            if (GetDriveType(drive) == DRIVE_FIXED) {
+                if (!IsSystemDrive(TCHARToWString(drive))) {
+                    std::cout << "警告：可以查找到 C:，但不是系统盘。继续操作可能导致无法预计的后果。若要继续，请按任意键继续。\n";
+                    pause();
+                }
+            }
+            else {
+                std::cout << "警告：可以找到分区 C:，但该分区属于可移动磁盘。继续操作可能导致无法预计的后果。若要继续，请按任意键继续。\n";
+                pause();
+            }
+        }
     }
 }
 
@@ -545,7 +584,7 @@ int GetChoice() {
 // 选项 3：已知限制
 void ShowLimits() {
     std::cout << "Windows Media Center 必须被卸载，目前为止没有找到解决方法。\n";
-    system("pause");
+    pause();
 }
 
 // 选项 2：检查依赖
@@ -675,7 +714,6 @@ BeginInst:
     WriteMediaPlayerRegistry();
 
     // 导入打开方式注册表
-    std::cout << "正在导入打开方式注册表...\n";
     if (is64Bit) {
         ImportRegFile(g_scriptDir + "\\SetOpeningMethod_x64.reg");
     }
@@ -793,7 +831,7 @@ EndCopyingLink:
     }
 
     std::cout << "多用户部署完成。\n";
-    system("pause");
+    pause();
     exit(0);
 }
 
@@ -843,7 +881,7 @@ void ExecuteDeployment() {
     }
     if (exceptionFlag) {
         std::cout << "程序将退出。\n";
-        system("pause");
+        pause();
         std::terminate();
     }
 
@@ -889,7 +927,7 @@ JudgeForStage:
             case 2:
                 std::cout << "注意：正在进行第二阶段覆盖执行阶段。";
                 stage = 2;
-                system("pause");
+                pause();
                 break;
             default:
                 std::cout << "警告：可能没有完成上一阶段，或注册表项被破坏。\n";
@@ -913,7 +951,7 @@ JudgeForStage:
         else {
             printf("读取失败，错误码: %lu\n", lResult);
             std::cout << "请检查注册表项HKEY_LOCAL_MACHINE\\SOFTWARE\\wmpConfig的读取权限，然后再试一次。\n";
-            system("pause");
+            pause();
             goto JudgeForStage;
         }
 
@@ -925,12 +963,12 @@ JudgeForStage:
     }
 Execute:
     std::cout << "程序将结束 Windows Media Player 与 Windows Media Center。请确保它们已经停止运行。\n";
-    system("pause");
+    pause();
     if (EnumWindows(CloseWindows, 0)) {
         std::cerr << "错误：无法结束进程，请手动执行，然后按任意键。\n";
         std::cout << "注意：若没有结束进程，那么写入文件将失败，程序将无法继续执行。\n";
     }
-    system("pause");
+    pause();
     if (stage == 1) {
         // 第一阶段
         std::cout << "第一阶段：卸载 Windows Media Center 和 Windows Media Player\n";
@@ -974,7 +1012,7 @@ Execute:
 
                         std::cout << "注意：Windows Vista 系统可能无法写入 Help 文件夹（程序将提示“拒绝访问”）。如果失败，您需要手动复制 *.hlp 文件到 C:\\Windows\\Help 文件夹。\n";
                         std::cout << "警告：无法证明接下来的操作不会引起任何问题。按下任意键后，若出现问题，您可能需要通过系统还原点或安装光盘进行还原。（您现在仍然可以安全退出）\n";
-                        system("pause");
+                        pause();
                         std::cout << "正在尝试更改写入权限...\n";
 
                         std::string filePath = is64Bit ?
@@ -1055,7 +1093,7 @@ Execute:
                         (osvi.dwMajorVersion == 6 && osvi.dwMinorVersion == 0)) {  // Windows Vista
 
                         std::cout << "注意：Windows Vista/10/11系统可能无法写入 Help 文件夹（程序将提示“拒绝访问”）。如果失败，您需要手动复制 *.hlp 文件到 C:\\Windows\\Help 文件夹。\n";
-                        system("pause");
+                        pause();
                         std::cout << "正在尝试更改写入权限...\n";
                         system("takeown /f \"C:\\Windows\\Help\\*\" /r /d y && icacls \"C:\\Windows\\Help\\*\" /grant administrators:F /t");
                     }
@@ -1079,7 +1117,7 @@ Execute:
                     tmp = prefix + "\\" + "wmplayer.chm\"";
                     tmp += " C:\\Windows\\Help";
                     system(tmp.c_str());
-                    system("pause");
+                    pause();
                     goto EndCopyExtendedResources;
                 }
             }
@@ -1160,33 +1198,33 @@ Execute:
         // 显示剩余空间
         ULONGLONG freeBytes = GetFreeSpaceEx("C:\\");
         std::cout << "当前剩余空间为 " << freeBytes << " 字节。建议预留 50~100MB 空间。\n";
-        system("pause");
+        pause();
 
         // 复制 wmp9xp 目录
         std::cout << "复制新文件 (wmp9xp)...\n";
         if (!CopyDirectory(g_scriptDir + "\\" + WMP9XP_DIR, TARGET_DIR.back())) {
             std::cerr << "复制 wmp9xp 失败: " << GetLastErrorStr() << std::endl;
-            system("pause");
+            pause();
             return;
         }
 
         // 禁用程序兼容性助手
         std::cout << "禁用程序兼容性助手...\n";
-        HKEY hKeyPCA;
-        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE, nullptr, &hKeyPCA, nullptr);
+        HKEY hKey;
+        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE, nullptr, &hKey, nullptr);
         DWORD val = 1;
-        RegSetValueExA(hKeyPCA, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
-        RegCloseKey(hKeyPCA);
+        RegSetValueExA(hKey, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
+        RegCloseKey(hKey);
         // 64位视图（如果存在）
-        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE | KEY_WOW64_64KEY, nullptr, &hKeyPCA, nullptr);
-        RegSetValueExA(hKeyPCA, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
-        RegCloseKey(hKeyPCA);
+        RegCreateKeyExA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Wow6432Node\\Policies\\Microsoft\\Windows\\AppCompat", 0, nullptr, 0, KEY_SET_VALUE | KEY_WOW64_64KEY, nullptr, &hKey, nullptr);
+        RegSetValueExA(hKey, "DisablePCA", 0, REG_DWORD, (BYTE*)&val, sizeof(val));
+        RegCloseKey(hKey);
 
         // 复制 wmp 目录
         std::cout << "复制新文件 (wmp)...\n";
         if (!CopyDirectory(g_scriptDir + "\\" + WMP_DIR, TARGET_DIR.back())) {
             std::cerr << "复制 wmp 失败: " << GetLastErrorStr() << std::endl;
-            system("pause");
+            pause();
             return;
         }
 
@@ -1346,6 +1384,38 @@ BOOL ProcessDirectory(LPCWSTR lpszRoot) {
     return TRUE;
 }
 
+BOOL IsSystem64Bit() {
+    SYSTEM_INFO si = { 0 };
+
+    // 动态获取 GetNativeSystemInfo 函数指针（XP SP2+ 支持）
+    typedef VOID(WINAPI* LPFN_GetNativeSystemInfo)(LPSYSTEM_INFO);
+    HMODULE hModule = GetModuleHandle(L"kernel32.dll");
+    if (hModule) {
+        LPFN_GetNativeSystemInfo pGetNativeSystemInfo =
+            (LPFN_GetNativeSystemInfo)GetProcAddress(
+                hModule,
+                "GetNativeSystemInfo"
+            );
+
+        if (pGetNativeSystemInfo) {
+            pGetNativeSystemInfo(&si);
+        }
+        else {
+            // 不支持 GetNativeSystemInfo 的系统（XP SP1 及更早），回退到 GetSystemInfo
+            GetSystemInfo(&si);
+            // 这种情况下系统一定是 32 位的（因为 64 位系统至少是 XP SP2）
+            WriteLog("Could not use GetNativeSystemInfo. Assuming system is x86 architecture.", "Warning");
+            return FALSE;
+        }
+
+    }
+
+    // 判断处理器架构
+    WriteLog("Detected processor architecture is " + si.wProcessorArchitecture, "Info");
+    return (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
+        si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_IA64);
+}
+
 // 程序入口
 int main() {
     // 设置控制台代码页为 UTF-8 或系统默认
@@ -1359,6 +1429,35 @@ int main() {
     size_t pos = g_scriptDir.find_last_of("\\");
     if (pos != std::string::npos)
         g_scriptDir = g_scriptDir.substr(0, pos);
+
+    // 设置系统版本对应的文件目录
+    SYSTEM_INFO nativeSI;
+    GetNativeSystemInfo(&nativeSI);
+
+    switch (nativeSI.wProcessorArchitecture) {
+    case PROCESSOR_ARCHITECTURE_AMD64:
+        is64Bit = true;
+        break;
+
+    case PROCESSOR_ARCHITECTURE_INTEL:
+        is64Bit = false;
+        break;
+
+    case PROCESSOR_ARCHITECTURE_ARM:
+        is64Bit = false;
+        break;
+
+    case PROCESSOR_ARCHITECTURE_ARM64:
+        is64Bit = true;
+        break;
+
+    case PROCESSOR_ARCHITECTURE_IA64:
+        is64Bit = true;
+        break;
+
+    default:
+        printf("Unknown (0x%x)\n", nativeSI.wProcessorArchitecture);
+    }
 
 #if defined (x86)
     if (!is64Bit) {
@@ -1402,18 +1501,51 @@ int main() {
         }
     }
 #endif
+
     if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
-    else TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
+    TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
 
-    system("whoami /all");
-    system("pause");
+    std::cout << "正在执行检查...\n";
 
+    // 检查系统盘符
+    char* sysDrive = getenv("SystemDrive");
+    if (sysDrive == NULL) {
+        std::cout << "警告：无法检查系统盘符。请确认系统盘为 C:，然后按任意键继续。\n";
+        pause();
+    }
+    else {
+        if ("C:" == sysDrive) {
+            // 系统盘为 C:。可以继续执行
+        }
+        else {
+            EnumDrives();
+        }
+        
+    }
+
+    if (!IsWMPInstalled()) {
+        HKEY hKey = NULL;
+        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\WMPConfig", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            DWORD dwVersionValue = 0;
+            DWORD dwVersionType = REG_DWORD;
+#pragma message("Start from here")
+        }
+    }
+
+    // 显示菜单
     while (true) {
         ShowMenu();
-        int choice = -1;
-        choice = GetChoice();
+        int choice = GetChoice();
+        if (choice == -1) {
+            std::cout << "无效输入，请重新选择。\n";
+            pause();
+            clrscr();
+            continue;
+        }
         switch (choice) {
         case 0:
+            std::cout << "退出程序...\n";
+            WriteLog("Process finished successfully.");
             return 0;
         case 1:
             ExecuteDeployment();
@@ -1437,7 +1569,7 @@ int main() {
             std::cout << "未知选项。\n";
 
         }
-        system("pause");
+        pause();
         clrscr();
     }
     return 0;
