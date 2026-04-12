@@ -35,6 +35,7 @@
 #pragma comment(lib, "Shell32.lib")
 #pragma comment(lib, "Ole32.lib")
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "Version.lib")
 
 #if defined(__x86_64__) || defined(_M_X64)\
 || defined(__ppc64__) || defined(__PPC64__)
@@ -51,13 +52,16 @@
 const std::string VERSION_MARKER_FILE = "1";
 const std::string WMP9XP_DIR = "wmp9xp";
 const std::string WMP_DIR = "wmp";
+const std::string TARGET_X86 = "C:\\Program Files\\Windows Media Player";
+const std::string TARGET_X64 = "C:\\Program Files (x86)\\Windows Media Player";
 
 std::vector<std::string> TARGET_DIR;
 
-// 全局变量（用于保存当前脚本所在目录）
+// 全局变量
 std::string g_scriptDir;
 bool is64Bit = false; // 记录系统是否为64位
 std::string usernameStr;
+bool skipStageOne = false;
 
 // 对 CPU 架构宏定义的移植
 #define PROCESSOR_ARCHITECTURE_PPC              3
@@ -866,6 +870,29 @@ BOOL CALLBACK CloseWindows(HWND hwnd, LPARAM lParam) {
     return 0;
 }
 
+// 判断程序使用的 Windows Media Player 版本
+int GetWindowsMediaPlayerVersion(std::string fileToCheck = g_scriptDir + "\\" + WMP9XP_DIR + "\\wmplayer.exe") {
+    DWORD dwHandle = 0;
+    DWORD dwSize = GetFileVersionInfoSizeW((to_wstring(fileToCheck).c_str()), &dwHandle);
+    if (dwSize == 0) return 0;
+
+    BYTE* pBuffer = new BYTE[dwSize];
+    if (!GetFileVersionInfoW((to_wstring(fileToCheck).c_str()), 0, dwSize, pBuffer)) {
+        delete[] pBuffer;
+        return 0;
+    }
+
+    VS_FIXEDFILEINFO* pFileInfo = nullptr;
+    UINT uLen = 0;
+    if (VerQueryValueW(pBuffer, L"\\", (LPVOID*)&pFileInfo, &uLen)) {
+        delete[] pBuffer;
+        return HIWORD(pFileInfo->dwProductVersionMS);
+    }
+
+    delete[] pBuffer;
+    return 0;
+
+}
 
 // 部署过程（选项 1）
 void ExecuteDeployment() {
@@ -896,6 +923,7 @@ void ExecuteDeployment() {
 
     // 判断是第一阶段还是第二阶段
 JudgeForStage:
+
     HKEY hKey;
     DWORD dwValue = 0;
     DWORD dwType = REG_DWORD;
@@ -970,6 +998,25 @@ Execute:
     }
     pause();
     if (stage == 1) {
+
+        if (!IsWMPInstalled()) {
+            switch (GetWindowsMediaPlayerVersion(TARGET_DIR.back())) {
+                // Start from here
+            case 11:
+                // For Windows Vista
+                break;
+            case 12:
+                // Windows 7 and upper
+                break;
+            case 9:
+                // Installed by program
+                break;
+            case 10:
+                // Installed by program
+                break;
+            }
+        }
+
         // 第一阶段
         std::cout << "第一阶段：卸载 Windows Media Center 和 Windows Media Player\n";
 
@@ -1016,8 +1063,8 @@ Execute:
                         std::cout << "正在尝试更改写入权限...\n";
 
                         std::string filePath = is64Bit ?
-                            "C:\\Program Files (x86)\\Windows Media Player" :
-                            "C:\\Program Files\\Windows Media Player"; // 目标文件路径
+                            TARGET_X86 :
+                            TARGET_X64; // 目标文件路径
                         std::string command =
                             "takeown /f \"" + filePath + "\" /r /d y && "  // /r 递归获取所有权，/d y 自动确认
                             "icacls \"" + filePath + "\" /grant Admin:(OI)(CI)F /t /c /q";  // /t 遍历子项，/c 继续错误，/q 安静模式
@@ -1282,6 +1329,16 @@ Execute:
             sizeof(DWORD)           // 数据大小
         );
 
+        data = 9;
+        result = RegSetValueExA(
+            hKeyB,
+            "InstalledVersion",
+            0,
+            REG_DWORD,
+            (const BYTE*)&data,
+            sizeof(DWORD)
+        );
+
         // 关闭句柄
         RegCloseKey(hKeyB);
 
@@ -1502,8 +1559,8 @@ int main() {
     }
 #endif
 
-    if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
-    TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
+    if (!is64Bit) TARGET_DIR.push_back(TARGET_X64);
+    TARGET_DIR.push_back(TARGET_X86);
 
     std::cout << "正在执行检查...\n";
 
@@ -1520,17 +1577,9 @@ int main() {
         else {
             EnumDrives();
         }
-        
+
     }
 
-    if (!IsWMPInstalled()) {
-        HKEY hKey = NULL;
-        if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, L"SOFTWARE\\WMPConfig", 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-            DWORD dwVersionValue = 0;
-            DWORD dwVersionType = REG_DWORD;
-#pragma message("Start from here")
-        }
-    }
 
     // 显示菜单
     while (true) {
