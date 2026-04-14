@@ -113,6 +113,7 @@ sfc /scannow 命令与 DISM.exe /Online /Cleanup-Image /ScanHealth 均为报告�
 3. Aero 主题下的非默认样式可能有多出的窗口边框；
 4. setup_wm.exe 无法启动；
 5. 文件资源管理器预览功能不可用
+6. 媒体库不工作（Windows Media Player 9出现）
 
 ## **免责声明**
 
