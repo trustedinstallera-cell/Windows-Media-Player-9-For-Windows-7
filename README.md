@@ -20,6 +20,9 @@
 > [!WARNING]
 > 本工具涉及系统文件替换，操作前请务必创建系统还原点。 ⚠️ **重要提醒**：操作前请备份数据。
 
+> [!WARNING]
+> Windows Media Center 的播放功能与Windows Media Player 不兼容。但其他大部分功能正常。
+
 > [!TIP]
 > 运行前建议先关闭所有正在运行的 Windows Media Player 与 Windows Media Center 进程。
 
