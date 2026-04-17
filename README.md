@@ -108,15 +108,14 @@
 没有，这不是本脚本设置的初衷，而且只能选择一个语言版本进行配置。但是。如果有一定计算机基础，您也许可以参考[LANGUAGE_REPLACEMENT.md](LANGUAGE_REPLACEMENT.md) 。
 
 ### 3、我还能不能使用系统资源修复命令？
-sfc /scannow 命令与 DISM.exe /Online /Cleanup-Image /ScanHealth 均为报告任何错误，重新启动计算机后运行 Windows Media Player 也没有遇到任何错误。
+sfc /scannow 命令与 DISM.exe /Online /Cleanup-Image /ScanHealth 均未报告任何错误，重新启动计算机后运行 Windows Media Player 也没有遇到任何错误。
 
 ## 已知问题
 1. 最小模式不启动；
 2. “脱机工作”无法选中，媒体指南只能在断网状态下打开，否则会因为尝试访问 https://support.microsoft.com/zh-cn/topic 而连续报出多个脚本错误，单击“主页”也存在相同的问题。原因可能是 Windows Media Player 调用了 IE 内核。脚本错误弹窗问题在 Internet Explorer 8 版本中不存在，仅提示网页无法打开。*如果遇到脚本错误弹窗，按住Esc键的同时多次单击“正在播放”选项可以避开此错误产生的影响。* **该问题在冷启动 Windows Media Player 时总是复现**；
 3. Aero 主题下的非默认样式可能有多出的窗口边框；
 4. setup_wm.exe 无法启动；
-5. 文件资源管理器预览功能不可用
-6. 媒体库不工作（Windows Media Player 9出现）
+5. 文件资源管理器预览功能不可用。
 
 ## **免责声明**
 
