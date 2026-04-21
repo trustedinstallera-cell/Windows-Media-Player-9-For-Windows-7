@@ -74,7 +74,7 @@
   - 64位系统（Windows 7 及以上）：最佳稳定性且Windows 7 SP1 x64已经经过长期使用
   - 32位系统（Windows 7 及以上）：稳定性良好
   - Windows Vista：基础功能可用，但稳定性未经充分测试且做法不符合常规流程并具有侵入性
-    **已经测试的系统：**
+**已经测试的系统：**
     Windows 7 SP1 x64、Windows Vista SP2 x64（不建议尝试）、Windows 8.1 x64
     Windows 10 version 1511 x86、Windows 10 version 1909 x64、Windows 11 25H2
     
