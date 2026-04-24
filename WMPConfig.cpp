@@ -117,6 +117,21 @@ void pause() {
     system("pause");
 }
 
+std::string format(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+
+    int len = vsnprintf(nullptr, 0, fmt, args);
+    va_end(args);
+
+    std::vector<char> buffer(len + 1);
+    va_start(args, fmt);
+    vsnprintf(buffer.data(), buffer.size(), fmt, args);
+    va_end(args);
+
+    return std::string(buffer.data());
+}
+
 // 写入日志。插入\n以换行
 void WriteLog(std::string str, std::string level = "") {
     if (file.is_open()) {
@@ -160,7 +175,7 @@ std::string GetLastErrorStr() {
 // 检查文件是否存在
 bool FileExists(const std::string& path) {
     DWORD attr = GetFileAttributesA(path.c_str());
-    return (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY));
+    return (GetFileAttributesA(path.c_str()) != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY));
 }
 
 // 检查目录是否存在
@@ -169,30 +184,15 @@ bool DirExists(const std::string& path) {
     return (attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-// 执行命令，等待完成并返回退出码
-int ExecuteCommand(const std::string& cmd, bool wait = true, bool showWindow = false) {
-    STARTUPINFOA si = { sizeof(si) };
-    PROCESS_INFORMATION pi;
-    if (!showWindow) {
-        si.dwFlags = STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_HIDE;
-    }
-    if (!CreateProcessA(nullptr, const_cast<LPSTR>(cmd.c_str()), nullptr, nullptr,
-        FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi)) {
-        std::cerr << "执行命令失败: " << cmd << " 错误: " << GetLastErrorStr() << std::endl;
-        return -1;
-    }
-    if (wait) {
-        WaitForSingleObject(pi.hProcess, INFINITE);
-        DWORD exitCode;
-        GetExitCodeProcess(pi.hProcess, &exitCode);
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-        return exitCode;
-    }
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
-    return 0;
+// 检查注册表项是否存在
+bool RegKeyExists(HKEY root, const char* subkey) {
+    HKEY hKey;
+    return RegOpenKeyExA(root, subkey, 0, KEY_READ, &hKey) == ERROR_SUCCESS
+        ? (RegCloseKey(hKey), true) : false;
+}
+
+int ExecuteCommand(const std::string& cmd){
+    return std::system(cmd.c_str());
 }
 
 // 检查当前进程是否以管理员身份运行
@@ -349,7 +349,8 @@ void RegisterFiles(std::string& dir) {
                 std::string currentFile = dir + "\\" + ffd.cFileName;
                 std::cout << "正在注册 " << currentFile << " ..." << std::endl;
                 std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
-                ExecuteCommand(cmd, true, false);
+                ExecuteCommand(cmd);
+                pause();
             }
         } while (FindNextFileA(hFind, &ffd) != 0);
         FindClose(hFind);
@@ -362,7 +363,8 @@ void RegisterFiles(std::string& dir) {
                 std::string currentFile = dir + "\\" + ffd.cFileName;
                 std::cout << "正在注册 " << currentFile << " ..." << std::endl;
                 std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
-                ExecuteCommand(cmd, true, false);
+                ExecuteCommand(cmd);
+                pause();
             }
         } while (FindNextFileA(hFind, &ffd) != 0);
         FindClose(hFind);
@@ -511,7 +513,8 @@ void WriteMediaPlayerRegistry() {
 void ImportRegFile(const std::string& regFile) {
     if (FileExists(regFile)) {
         std::string cmd = "reg import \"" + regFile + "\"";
-        ExecuteCommand(cmd, true, false);
+        ExecuteCommand(cmd);
+        pause();
         std::cout << "注册表文件导入完成。" << std::endl;
     }
     else {
@@ -1028,10 +1031,10 @@ Execute:
         if (ch == 'y' || ch == 'Y') {
             // 启用系统还原（使用 wmic，因为 API 较复杂）
             std::cout << "正在启用系统还原...\n";
-            ExecuteCommand("wmic /namespace:\\\\root\\default path SystemRestore call Enable \"C:\"", true, false);
+            ExecuteCommand("wmic /namespace:\\\\root\\default path SystemRestore call Enable \"C:\"");
             // 创建还原点
             std::cout << "正在创建还原点...\n";
-            int ret = ExecuteCommand("wmic.exe /Namespace:\\\\root\\default Path SystemRestore Call CreateRestorePoint \"降级至 Windows Media Player 9\", 100, 7", true, false);
+            int ret = ExecuteCommand("wmic.exe /Namespace:\\\\root\\default Path SystemRestore Call CreateRestorePoint \"降级至 Windows Media Player 9\", 100, 7");
             if (ret != 0 && ret != 102) {
                 std::cerr << "创建还原点失败，错误码: " << ret << std::endl;
                 std::cout << "跳过还原点配置？(y/n): ";
@@ -1294,7 +1297,8 @@ Execute:
         if (FileExists(msdxm)) {
             std::cout << "正在注册 msdxm.ocx...\n";
             std::string cmd = "regsvr32 /s \"" + msdxm + "\"";
-            ExecuteCommand(cmd, true, false);
+            ExecuteCommand(cmd);
+            pause();
         }
 
 
@@ -1475,9 +1479,6 @@ BOOL IsSystem64Bit() {
 
 // 程序入口
 int main() {
-    // 设置控制台代码页为 UTF-8 或系统默认
-    SetConsoleOutputCP(CP_ACP);
-    SetConsoleCP(CP_ACP);
 
     // 获取脚本所在目录
     char path[MAX_PATH];
@@ -1490,6 +1491,8 @@ int main() {
     // 设置系统版本对应的文件目录
     SYSTEM_INFO nativeSI;
     GetNativeSystemInfo(&nativeSI);
+
+    //std::cout<<locker.LockRegistry(HKEY_LOCAL_MACHINE,"SOFTWARE\\MyApp");
 
     switch (nativeSI.wProcessorArchitecture) {
     case PROCESSOR_ARCHITECTURE_AMD64:
