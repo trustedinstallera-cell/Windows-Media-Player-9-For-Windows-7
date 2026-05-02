@@ -116,13 +116,24 @@
 sfc /scannow 命令与 DISM.exe /Online /Cleanup-Image /ScanHealth 均未报告任何错误，重新启动计算机后运行 Windows Media Player 也没有遇到任何错误。
 
 ## 已知问题
+### 通用问题
 1. 最小模式不启动；
 2. “脱机工作”无法选中，媒体指南只能在断网状态下打开，否则会因为尝试访问 https://support.microsoft.com/zh-cn/topic 而连续报出多个脚本错误，单击“主页”也存在相同的问题。原因可能是 Windows Media Player 调用了 IE 内核。脚本错误弹窗问题在 Internet Explorer 8 版本中不存在，仅提示网页无法打开。*如果遇到脚本错误弹窗，按住Esc键的同时多次单击“正在播放”选项可以避开此错误产生的影响。* **该问题在冷启动 Windows Media Player 时总是复现**；
 3. Aero 主题下的非默认样式可能有多出的窗口边框；
 4. setup_wm.exe 无法启动；
 5. 文件资源管理器预览功能不可用；
-6. 只有在管理员权限下，媒体库功能才能正常工作。即使是管理员账户，也需要勾选“wmplayer.exe->属性->特权等级->以管理员身份运行此程序”才能生效，而且除非关闭 UAC，否则每次运行都会弹窗。普通账户则一定弹窗，除非放弃该功能。
+6. 只有在管理员权限下，媒体库功能才能正常工作。即使是管理员账户，也需要勾选“wmplayer.exe->属性->特权等级->以管理员身份运行此程序”才能生效，而且除非关闭 UAC，否则每次运行都会弹窗。普通账户则一定弹窗，除非放弃该功能；
 7. 对某些USB设备的复制功能可能不生效。
+
+### 对 Windows Media Player 8 的额外适配说明 **（极度不推荐使用这个版本）**
+本配置程序对 Windows Media Player 8 的适配难度非常大，存在以下额外问题：
+- 完整模式下 GDI 对象失效，布局显示异常；
+- 播放 WMV 文件需依赖第三方解码器，否则程序崩溃；
+- “定位窗口”设置需切换视觉模式或重启播放器后才能生效；
+- WMP8 本身的播放功能也存在部分问题；
+- 因完整模式问题严重，这个版本的播放器未配置简体中文语言包（界面为英文）。
+
+> 相关二进制文件见：[WMP8_Config.7z](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/blob/Deprecated/legacy/WMP8_Config.7z) 
 
 ## **免责声明**
 
