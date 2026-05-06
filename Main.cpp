@@ -59,18 +59,24 @@ std::string usernameStr;
 std::wofstream file("log.txt");
 
 BOOL ProcessDirectory(LPCWSTR lpszRoot);
-bool SetFileOwner(LPWSTR path, PSID pNewOwnerSid);
 
-inline std::wstring to_wstring(std::string& str) {
+std::wstring to_wstring(std::string& str) {
     int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
     std::wstring wideStr(wideLen, L'\0');
     MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, &wideStr[0], wideLen);
     return wideStr;
 }
 
-inline std::string to_string(std::wstring& wstr) {
+std::string to_string(std::wstring& wstr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wstr);
+}
+
+std::wstring tolower(std::wstring ws) {
+    for (wchar_t& ch : ws) {
+        ch = tolower(ch);
+    }
+    return ws;
 }
 
 BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey) {
@@ -297,6 +303,78 @@ void RegisterFiles(std::string& dir) {
     }
 }
 
+void SearchWMZDirectory(const std::wstring& directory, std::vector<std::wstring>& files) {
+    std::wstring searchPath = directory + L"\\*";
+    WIN32_FIND_DATAW findData;
+    HANDLE hFind = FindFirstFileW(searchPath.c_str(), &findData);
+
+    if (hFind == INVALID_HANDLE_VALUE) {
+        return;
+    }
+
+    do {
+        if (wcscmp(findData.cFileName, L".") == 0 ||
+            wcscmp(findData.cFileName, L"..") == 0) {
+            continue;
+        }
+
+        std::wstring fullPath = directory + L"\\" + findData.cFileName;
+
+        if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            SearchWMZDirectory(fullPath, files);
+        }
+        else {
+            size_t dotPos = fullPath.rfind(L'.');
+            if (dotPos != std::wstring::npos) {
+                std::wstring ext = fullPath.substr(dotPos);
+                if (_wcsicmp(ext.c_str(), L".wmz") == 0) {
+                    // 检查是否已存在同名文件
+                    bool exists = false;
+                    for (const auto& existing : files) {
+                        size_t lastSlash = existing.rfind(L'\\');
+                        std::wstring existingName = (lastSlash != std::wstring::npos)
+                            ? existing.substr(lastSlash + 1)
+                            : existing;
+                        if (_wcsicmp(existingName.c_str(), findData.cFileName) == 0) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        files.push_back(fullPath);
+                    }
+                }
+            }
+        }
+    } while (FindNextFileW(hFind, &findData) != 0);
+
+    FindClose(hFind);
+}
+
+// 辅助函数：创建目录（如果不存在）
+bool CreateDirectoryRecursive(const std::wstring& path) {
+    if (path.empty()) return false;
+
+    if (CreateDirectoryW(path.c_str(), NULL)) {
+        return true;
+    }
+
+    if (GetLastError() == ERROR_ALREADY_EXISTS) {
+        return true;
+    }
+
+    // 递归创建父目录
+    size_t pos = path.rfind(L'\\');
+    if (pos != std::wstring::npos) {
+        std::wstring parent = path.substr(0, pos);
+        if (CreateDirectoryRecursive(parent)) {
+            return CreateDirectoryW(path.c_str(), NULL) != 0;
+        }
+    }
+
+    return false;
+}
+
 // 获取当前用户的 SID（字符串形式）
 std::string GetCurrentUserSid() {
     HANDLE hToken = nullptr;
@@ -445,6 +523,19 @@ void ImportRegFile(const std::string& regFile) {
     else {
         std::cerr << "警告: 找不到注册表文件 " << regFile << std::endl;
     }
+}
+
+bool CopyFileToDir(const wchar_t* sourcePath, const wchar_t* targetDir, bool overwrite = true) {
+    // 提取文件名
+    const wchar_t* fileName = wcsrchr(sourcePath, L'\\');
+    fileName = fileName ? fileName + 1 : sourcePath;
+
+    // 构建目标路径
+    wchar_t targetPath[MAX_PATH];
+    wsprintfW(targetPath, L"%s\\%s", targetDir, fileName);
+
+    // 复制文件
+    return CopyFileW(sourcePath, targetPath, !overwrite) != FALSE;
 }
 
 void EnumDrives() {
@@ -711,7 +802,59 @@ BeginInst:
         }
     }
 EndCopyingLink:
-    // 打开方式注册（再次询问，但已导入过）
+
+    const char* appdata = std::getenv("APPDATA");
+    if (appdata != nullptr) {
+        std::cout << "正在搜索 .wmz 文件...\n";
+        std::vector<std::wstring> result;
+        SearchWMZDirectory(is64Bit ? L"C:\\Program Files (x86)\\Windows Media Player"
+            : L"C:\\Program Files\\Windows Media Player", result);
+
+        if (!result.empty()) {
+            char choice = '\0';
+            std::cout << "是否恢复外观文件？(y/n): ";
+            std::cin >> choice;
+
+            if (tolower(choice) != 'n') {
+                std::cout << "\n";
+
+                // 复用已获取的 appdata，添加空指针检查
+                std::string targetPath = std::string(appdata) + "\\Microsoft\\Media Player\\Skins";
+                std::wstring targetWPath = to_wstring(targetPath);
+
+                // 确保目标目录存在
+                if (!CreateDirectoryRecursive(targetWPath)) {
+                    std::cout << "错误：无法创建目标目录 " << targetPath << std::endl;
+                    goto SetOpenMethod;
+                }
+
+                for (std::wstring& source : result) {
+                    std::cout << "从 " << to_string(source) << " 复制 ...";
+
+                    if (CopyFileToDir(source.c_str(), targetWPath.c_str(), FALSE)) {
+                        std::cout << " 完成！\n";
+                    }
+                    else {
+                        if (GetLastError() == ERROR_FILE_EXISTS) {
+                            std::cout << " 已跳过存在的文件。\n";
+                        }
+                        else {
+                            std::cout << " 失败。(错误码: " << GetLastError() << ")\n";
+                        }
+                    }
+                }
+            }
+            else {
+                std::cout << "已取消操作。" << std::endl;
+            }
+        }
+        else {
+            std::cout << "未找到任何 .wmz 文件。" << std::endl;
+        }
+    }
+SetOpenMethod:
+
+    // 打开方式注册
     std::cout << "重新注册打开方式？(y/n): ";
     std::cin >> ch;
     std::cin.ignore();
@@ -862,8 +1005,9 @@ Execute:
     if (EnumWindows(CloseWindows, 0)) {
         std::cerr << "错误：无法结束进程，请手动执行，然后按任意键。\n";
         std::cout << "注意：若没有结束进程，那么写入文件将失败，程序将无法继续执行。\n";
+        system("pause");
     }
-    system("pause");
+
     if (stage == 1) {
         // 第一阶段
         std::cout << "第一阶段：卸载 Windows Media Center 和 Windows Media Player\n";
@@ -1352,17 +1496,62 @@ int main() {
         printf("Unknown (0x%x)\n", nativeSI.wProcessorArchitecture);
     }
 
-    if (!is64Bit) TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
-    TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
+    if (is64Bit) TARGET_DIR.push_back("C:\\Program Files (x86)\\Windows Media Player");
+    else TARGET_DIR.push_back("C:\\Program Files\\Windows Media Player");
 
-        // 检查系统盘符
+#ifndef _WIN64
+    if (is64Bit) {
+        std::cout << "警告：正在使用不符合系统架构的程序版本。dism 将无法正确使用，需要手动设置还原点与卸载程序。\n是否切换到正确的版本？(Y/n)\n";
+        char choice = 'y';
+        std::cin >> choice;
+        if (tolower(choice) != 'n') {
+            if (FileExists(g_scriptDir + "\\WMPConfig_x64.exe")) {
+                STARTUPINFO si = { sizeof(si) };
+                PROCESS_INFORMATION pi;
+
+                std::string str = g_scriptDir + "\\WMPConfig_x64.exe";
+                std::wstring ws = to_wstring(str).c_str();
+                const wchar_t* wc = ws.c_str();
+
+                // 创建新进程
+
+                if (CreateProcess(
+                    wc,  // 可执行文件路径
+                    NULL,                           // 命令行参数
+                    NULL,                           // 进程安全属性
+                    NULL,                           // 线程安全属性
+                    FALSE,                          // 继承句柄
+                    CREATE_NEW_CONSOLE,               // 创建独立进程
+                    NULL,                           // 环境变量
+                    NULL,                           // 当前目录
+                    &si,                            // 启动信息
+                    &pi)) {                         // 进程信息
+
+                    std::cout << "成功启动64位程序，进程ID：" << pi.dwProcessId << std::endl;
+                    CloseHandle(pi.hThread);
+                    CloseHandle(pi.hProcess);
+
+                    return 10;
+                }
+                else {
+                    std::cout << "发生错误。错误代码：" << GetLastError();
+                    system("pause");
+                }
+
+            }
+            else {
+                std::cerr << "错误：找不到 64 位程序。请重新下载应用程序，或手动创建还原点并卸载Windows Media Player，或退出本应用程序。您的系统尚未更改。\n";
+                system("pause");
+            }
+        }
+    }
+#endif
+
+    // 检查系统盘符
     char* sysDrive = getenv("SystemDrive");
     if (sysDrive == NULL) {
         std::cout << "警告：无法检查系统盘符。请确认系统盘为 C:，然后按任意键继续。\n";
         system("pause");
-    }
-    else {
-
     }
 
     while (true) {
