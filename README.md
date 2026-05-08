@@ -34,7 +34,7 @@
 
 ## 💡 用法
 
-1. 选择适用于您需要的版本 [Windows Media Player 9](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/releases/download/v1.3/WMP9_Config.zip) 或 [Windows Media Player 10](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/releases/download/v1.3/WMP10_Config.zip)并下载压缩包。**注意：程序不会判断使用的 WMP 版本并给出提示。**
+1. 选择适用于您需要的版本 [Windows Media Player 9](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/releases/latest/download/WMP9_Config.zip) 或 [Windows Media Player 10](https://github.com/trustedinstallera-cell/Windows-Media-Player-9-For-Windows-7/releases/latest/download/WMP10_Config.zip)并下载压缩包。**注意：程序不会判断使用的 WMP 版本并给出提示。**
 2. 双击运行适用于您的系统架构的 WMP_Config.exe。如果不确定，可以随意选择一个版本，操作系统或程序将引导您选择正确的版本。
 3. 按 1 键并回车开始配置，如果弹出 UAC 窗口，请点击“是”。再次按下 1 键并回车。程序将正式开始配置，看到重启提示后，请重新启动计算机。
 4. 重启后再次运行程序，按 1 键完成部署。您还可以选择是否重新注册打开方式与还原部分快捷方式。
