@@ -3,7 +3,7 @@
 // 需要链接以下库：Advapi32.lib, Shell32.lib, Ole32.lib
 #pragma warning(disable : 4996)
 #pragma prefast(disable: 28159)
-#define _WIN32_WINNT 0x0501
+//#define _WIN32_WINNT 0x0501
 #include <iostream>
 #include <string>
 #include <vector>
@@ -58,18 +58,32 @@ std::string usernameStr;
 std::wofstream file("log.txt");
 
 BOOL ProcessDirectory(LPCWSTR lpszRoot);
-bool SetFileOwner(LPWSTR path, PSID pNewOwnerSid);
+//bool SetFileOwner(LPWSTR path, PSID pNewOwnerSid);
 
-inline std::wstring to_wstring(std::string& str) {
+std::wstring to_wstring(std::string& str) {
     int wideLen = MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
     std::wstring wideStr(wideLen, L'\0');
     MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, &wideStr[0], wideLen);
     return wideStr;
 }
 
-inline std::string to_string(std::wstring& wstr) {
+std::string to_string(std::wstring& wstr) {
     std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
     return converter.to_bytes(wstr);
+}
+
+std::string tolower(std::string str) {
+    for (char& ch : str) {
+        ch = tolower(ch);
+    }
+    return str;
+}
+
+std::wstring tolower(std::wstring str) {
+    for (wchar_t& ch : str) {
+        ch = tolower(ch);
+    }
+    return str;
 }
 
 BOOL DeleteKeyRecursively(HKEY hKeyRoot, LPCTSTR lpszSubKey) {
@@ -116,7 +130,7 @@ bool DirExists(const std::string& path) {
 }
 
 // 执行命令，等待完成并返回退出码
-int ExecuteCommand(const std::string& cmd, bool wait = true, bool showWindow = false) {
+int Exec(const std::string& cmd, bool wait = true, bool showWindow = false) {
     STARTUPINFOA si = { sizeof(si) };
     PROCESS_INFORMATION pi;
     if (!showWindow) {
@@ -166,7 +180,7 @@ void RunAsAdmin() {
 
 // 修改为 ANSI 版本（使用 const char*）
 bool PinToTaskbar(const wchar_t* shortcut) {
-    int result = reinterpret_cast<int>(ShellExecute(NULL, L"taskbarpin", shortcut,
+    intptr_t result = reinterpret_cast<int>(ShellExecute(NULL, L"taskbarpin", shortcut,
         NULL, NULL, 0));
     return result > 32;
 }
@@ -265,34 +279,81 @@ bool CopyDirectory(const std::string& src, const std::string& dst) {
     return true;
 }
 
-// 注册目录下所有 .dll 和 .ax 文件（调用 regsvr32）
-void RegisterFiles(std::string& dir) {
-    std::string searchPath = dir + "\\*.dll";
-    WIN32_FIND_DATAA ffd;
-    HANDLE hFind = FindFirstFileA(searchPath.c_str(), &ffd);
-    if (hFind != INVALID_HANDLE_VALUE) {
-        do {
-            if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                std::string currentFile = dir + "\\" + ffd.cFileName;
-                std::cout << "正在注册 " << currentFile << " ..." << std::endl;
-                std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
-                ExecuteCommand(cmd, true, false);
+bool DeleteDirectory(const std::string& path) {
+    WIN32_FIND_DATAA fd;
+    HANDLE hFind;
+
+    std::string searchPath = path + "\\*";
+
+    hFind = FindFirstFileA(searchPath.c_str(), &fd);
+
+    if (hFind != INVALID_HANDLE_VALUE)
+    {
+        do
+        {
+            if (strcmp(fd.cFileName, ".") == 0 ||
+                strcmp(fd.cFileName, "..") == 0)
+            {
+                continue;
             }
-        } while (FindNextFileA(hFind, &ffd) != 0);
+
+            std::string fullPath =
+                path + "\\" + fd.cFileName;
+
+            if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+            {
+                DeleteDirectory(fullPath);
+            }
+            else
+            {
+                SetFileAttributesA(fullPath.c_str(),
+                    FILE_ATTRIBUTE_NORMAL);
+
+                DeleteFileA(fullPath.c_str());
+            }
+
+        } while (FindNextFileA(hFind, &fd));
+
         FindClose(hFind);
     }
-    searchPath = dir + "\\*.ax";
-    hFind = FindFirstFileA(searchPath.c_str(), &ffd);
-    if (hFind != INVALID_HANDLE_VALUE) {
-        do {
-            if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                std::string currentFile = dir + "\\" + ffd.cFileName;
-                std::cout << "正在注册 " << currentFile << " ..." << std::endl;
-                std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
-                ExecuteCommand(cmd, true, false);
+
+    SetFileAttributesA(path.c_str(),
+        FILE_ATTRIBUTE_NORMAL);
+
+    return RemoveDirectoryA(path.c_str()) != 0;
+
+}
+
+// 注册目录下所有 .dll 和 .ax 文件（调用 regsvr32）
+void InvokeRegsvr32(std::string& dir,bool isRegister) {
+    const std::vector<std::string> extensions = { ".dll",".ax" };
+    const std::vector<std::string> exclusions = { "qasf.dll" };
+    for (auto& ext : extensions) {
+        std::string searchPath = dir + "\\*" + ext;
+        WIN32_FIND_DATAA ffd;
+        HANDLE hFind = FindFirstFileA(searchPath.c_str(), &ffd);
+        if (hFind != INVALID_HANDLE_VALUE) {
+            std::string tip = "正在注册 ";
+            if (!isRegister) {
+                tip = "正在注销 ";
+                for (auto& s : exclusions) {
+                    if (tolower(s) == tolower(ffd.cFileName)) {
+                        goto end;
+                    }
+                }
             }
-        } while (FindNextFileA(hFind, &ffd) != 0);
-        FindClose(hFind);
+            do {
+                if (!(ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                    std::string currentFile = dir + "\\" + ffd.cFileName;
+                    std::cout << tip << currentFile << " ..." << std::endl;
+                    std::string cmd = "regsvr32 /s \"" + currentFile + "\"";
+                    Exec(cmd, true, false);
+                }
+            } while (FindNextFileA(hFind, &ffd) != 0);
+            FindClose(hFind);
+        }
+    end:
+        continue;
     }
 }
 
@@ -438,7 +499,7 @@ void WriteMediaPlayerRegistry() {
 void ImportRegFile(const std::string& regFile) {
     if (FileExists(regFile)) {
         std::string cmd = "reg import \"" + regFile + "\"";
-        ExecuteCommand(cmd, true, false);
+        Exec(cmd, true, false);
         std::cout << "注册表文件导入完成。" << std::endl;
     }
     else {
@@ -451,7 +512,7 @@ void ShowMenu() {
     std::cout << "\n[0] 退出程序\n";
     std::cout << "[1] 执行部署过程\n";
     std::cout << "[2] 检查依赖项目\n";
-    std::cout << "[3] 查看已知限制\n";
+    std::cout << "[3] 撤销对Windows Media Player 9 的安装\n";
     std::cout << "[4] 执行多用户部署\n";
     std::cout << "请选择一个选项: ";
 }
@@ -866,10 +927,10 @@ Execute:
         if (ch == 'y' || ch == 'Y') {
             // 启用系统还原（使用 wmic，因为 API 较复杂）
             std::cout << "正在启用系统还原...\n";
-            ExecuteCommand("wmic /namespace:\\\\root\\default path SystemRestore call Enable \"C:\"", true, false);
+            Exec("wmic /namespace:\\\\root\\default path SystemRestore call Enable \"C:\"", true, false);
             // 创建还原点
             std::cout << "正在创建还原点...\n";
-            int ret = ExecuteCommand("wmic.exe /Namespace:\\\\root\\default Path SystemRestore Call CreateRestorePoint \"降级至 Windows Media Player 9\", 100, 7", true, false);
+            int ret = Exec("wmic.exe /Namespace:\\\\root\\default Path SystemRestore Call CreateRestorePoint \"降级至 Windows Media Player 9\", 100, 7", true, false);
             if (ret != 0 && ret != 102) {
                 std::cerr << "创建还原点失败，错误码: " << ret << std::endl;
                 std::cout << "跳过还原点配置？(y/n): ";
@@ -913,9 +974,9 @@ Execute:
 
                         // 卸载 Media Center 和 Media Player
                         std::cout << "卸载 Windows Media Center...\n";
-                        //ExecuteCommand("DISM /online /disable-feature /featurename:WindowsMediaCenter /NoRestart", true, false);
+                        //Exec("DISM /online /disable-feature /featurename:WindowsMediaCenter /NoRestart", true, false);
                         std::cout << "卸载 Windows Media Player...\n";
-                        system("DISM /online /disable-feature /featurename:WindowsMediaPlayer /norestart");
+                        Exec("DISM /online /disable-feature /featurename:WindowsMediaPlayer /norestart");
 
 
                         std::cout << "第一阶段已完成。请尽快保存手头的工作，重新启动计算机，然后再次运行该程序。\n";
@@ -945,7 +1006,7 @@ Execute:
                         sizeof(DWORD)
                     );
                     if (ch == 'y' || ch == 'Y') {
-                        //ExecuteCommand("shutdown -r -t 0", false, false);
+                        //Exec("shutdown -r -t 0", false, false);
                         BOOL res = EnableShutdownPrivilege(TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY);
                         if (res) {
                             ExitWindowsEx(EWX_REBOOT, SHTDN_REASON_MAJOR_APPLICATION | SHTDN_REASON_MINOR_HOTFIX_UNINSTALL);
@@ -1115,7 +1176,7 @@ Execute:
 
         // 注册 DLL 和 AX
         std::cout << "注册文件...\n";
-        RegisterFiles(TARGET_DIR.back());
+        InvokeRegsvr32(TARGET_DIR.back(), true);
 
         // 跳过安装向导
         HKEY hkcu;
@@ -1132,7 +1193,7 @@ Execute:
         if (FileExists(msdxm)) {
             std::cout << "正在注册 msdxm.ocx...\n";
             std::string cmd = "regsvr32 /s \"" + msdxm + "\"";
-            ExecuteCommand(cmd, true, false);
+            Exec(cmd, true, false);
         }
 
 
@@ -1180,6 +1241,36 @@ Execute:
         MultiUsersSetup();  // 此函数会询问快捷方式等，并写入注册表
     }
     RegCloseKey(hKey);
+}
+
+void uninstall() {
+    std::cout << "若确实需要卸载 Windows Media Player 9，请按回车键以正式开始。\n";
+    std::string $_;
+    std::getline(std::cin,$_);
+    std::cout << "正在注销 DLL...";
+    InvokeRegsvr32(TARGET_DIR.back(), false);
+    std::cout << "\n正在清除文件...";
+    DeleteDirectory(TARGET_DIR.back());
+    std::cout << std::endl;
+    std::cout << "是否重新配置 Windows Media Player？(Y/N)";
+    std::string choice;
+    std::cin >> choice;
+    if (tolower(choice) == "y") {
+        std::cout << "正在配置 Windows Media Player... 这可能需要几分钟...";
+        int returnVal = Exec("DISM /online /Enable-feature /featurename:WindowsMediaPlayer /norestart");
+        std::cout << std::endl;
+        if (returnVal == 87) {
+            std::cout << "正在执行替代操作...\n";
+            returnVal = Exec("dism /online /Enable-Feature /FeatureName:MediaPlayback /All /norestart");
+        }
+        if (returnVal != 0) {
+
+        }
+    }
+    else {
+        std::cout << "已跳过对 Windows Media Player 12 的配置。\n";
+    }
+    
 }
 
 void clrscr() {    //清空屏幕
@@ -1365,7 +1456,7 @@ int main() {
             CheckDependencies();
             break;
         case 3:
-            ShowLimits();
+            uninstall();
             break;
         case 4:
             if (!IsAdmin()) {
